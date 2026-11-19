@@ -117,6 +117,27 @@ async function shrink(file) { // downscale big photos in the browser so uploads 
   return c.toDataURL('image/jpeg', 0.85);
 }
 const GARMENT_PHOTO = {
+async function uploadFiles(files, max) {
+  const urls = [];
+  for (const f of [...files].slice(0, max)) { if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { toast('Only PNG, JPG or WebP images are allowed', true); continue; } urls.push(await shrink(f)); }
+  return urls;
+}
+function photoField(name, label, urls = [], max = 4) {
+  return `<div class="field" data-photos="${name}" data-max="${max}"><label>${label}</label>
+    <input type="hidden" name="${name}" value="${esc(JSON.stringify(urls))}">
+    <div class="thumbs">${urls.map(u => `<img src="${esc(u)}" alt="">`).join('')}</div>
+    <input type="file" accept="image/png,image/jpeg,image/webp" multiple data-change="photos" style="margin-top:8px">
+    <div class="hint">Up to ${max} photos, PNG/JPG/WebP.</div></div>`;
+}
+D.changes.photos = async (el) => {
+  const box = el.closest('[data-photos]'), hid = $('input[type=hidden]', box), max = +box.dataset.max;
+  const cur = JSON.parse(hid.value || '[]'); el.disabled = true;
+  try { const add = await uploadFiles(el.files, max - cur.length); const all = cur.concat(add).slice(0, max); hid.value = JSON.stringify(all); $('.thumbs', box).innerHTML = all.map(u => `<img src="${esc(u)}" alt="">`).join(''); }
+  catch (e) { fail(e); } finally { el.disabled = false; el.value = ''; }
+};
+
+// ---- garment photography ----
+const GARMENT_PHOTO = {
   shirts: 'https://images.pexels.com/photos/297933/pexels-photo-297933.jpeg?auto=compress&cs=tinysrgb&w=800',
   pants: 'https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=800',
   kurtas: 'https://images.pexels.com/photos/2065195/pexels-photo-2065195.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -132,46 +153,6 @@ const catSlug = (id) => { const c = D.cfg && D.cfg.categories.find(c => c.id ===
 function pic(d) {
   const src = d.image_url || GARMENT_PHOTO[catSlug(d.category_id)] || GARMENT_PHOTO.other;
   return `<img src="${esc(src)}" alt="${esc(d.name)}" loading="lazy" onload="this.classList.add('loaded')">`;
-}
-  try { const add = await uploadFiles(el.files, max - cur.length); const all = cur.concat(add).slice(0, max); hid.value = JSON.stringify(all); $('.thumbs', box).innerHTML = all.map(u => `<img src="${u}" alt="">`).join(''); }
-  catch (e) { fail(e); } finally { el.disabled = false; el.value = ''; }
-};
-
-// ---- garment illustrations (used when a design has no uploaded photo) ----
-const GARMENT = {
-  shirts: '<path d="M40 20 28 26 12 52l12 8 10-12v56h52V48l10 12 12-8-16-26-12-6-10 8-10 6-10-6z" /><path d="M50 28l10 12 10-12M60 40v64" fill="none"/>',
-  pants: '<path d="M36 14h48l6 92H66L60 46l-6 60H30z"/><path d="M36 22h48" fill="none"/>',
-  kurtas: '<path d="M42 14 28 20 14 44l10 8 10-10-2 66h56l-2-66 10 10 10-8-14-24-14-6-12 10-12-10z"/><path d="M54 24l6 12 6-12M60 36v30" fill="none"/>',
-  suits: '<path d="M42 14 24 24 10 60l12 6 10-18v56h56V48l10 18 12-6-14-36-18-10-18 42z"/><path d="M42 14l18 42 18-42M60 56v48" fill="none"/><circle cx="60" cy="70" r="2.2" fill="currentColor"/><circle cx="60" cy="86" r="2.2" fill="currentColor"/>',
-  blouses: '<path d="M42 22 26 28 16 46l12 6 8-8v38h48V44l8 8 12-6-10-18-16-6c-6 14-24 14-36 0z"/>',
-  other: '<path d="M40 16 30 28v76h60V28L80 16 60 42z"/><path d="M60 42v62" fill="none"/>'
-};
-function garment(slug, color = '#d9cdb4', cls = '') {
-  const g = GARMENT[slug] || GARMENT.other;
-  return `<svg class="${cls}" viewBox="0 0 120 120" aria-hidden="true" fill="${esc(color)}" stroke="rgba(28,40,34,.55)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" style="color:rgba(28,40,34,.55)">${g}</svg>`;
-}
-const catSlug = (id) => { const c = D.cfg && D.cfg.categories.find(c => c.id === id); return c ? c.slug : 'other'; };
-function pic(d) { return d.image_url ? `<img src="${esc(d.image_url)}" alt="${esc(d.name)}" loading="lazy">` : garment(catSlug(d.category_id), d.color); }
-
-// ---- measurement guides ----
-const GUIDE = {
-  neck: ['Wrap the tape around the base of your neck. Keep one finger between tape and neck.', 'M100,50 m-14,0 a14,6 0 1,0 28,0 a14,6 0 1,0 -28,0'],
-  chest: ['Go around the fullest part of your chest, under the arms, with the tape level across the back.', 'M62,98 L138,98'],
-  waist: ['Measure around your natural waist, the narrowest part of your torso. Do not pull the tape tight.', 'M68,134 L132,134'],
-  hip: ['Go around the fullest part of your hips and seat, keeping the tape level.', 'M64,166 L136,166'],
-  shoulder: ['Measure straight across the back from the edge of one shoulder to the other.', 'M58,76 L142,76'],
-  sleeve: ['From the tip of your shoulder to your wrist bone, with the arm slightly bent.', 'M144,78 L170,150'],
-  thigh: ['Around the fullest part of your upper thigh.', 'M64,198 L98,198'],
-  inseam: ['From the crotch down the inside of the leg to the ankle bone.', 'M100,178 L100,300'],
-  'pant length': ['From the waist along the outside of the leg to the ankle.', 'M70,134 L70,304'],
-  bottom: ['The width you want around the trouser bottom (hem).', 'M62,300 L96,300'],
-  length: ['From the high point of the shoulder next to the neck down to where you want the garment to end.', 'M100,58 L100,200'],
-  depth: ['From the shoulder seam straight down to where the neckline should end.', 'M100,60 L100,96']
-};
-function guideFor(field) {
-  const f = field.toLowerCase();
-  const key = f.includes('bottom') ? 'bottom' : f.includes('pant') ? 'pant length' : f.includes('depth') ? 'depth' : f.includes('length') && f.includes('sleeve') ? 'sleeve' : f.includes('length') ? 'length' : Object.keys(GUIDE).find(k => f.includes(k));
-  return GUIDE[key] || ['Measure snugly, but not tight, and note it in inches.', 'M62,98 L138,98'];
 }
 function guideCard(field) {
   const [text, d] = guideFor(field);
