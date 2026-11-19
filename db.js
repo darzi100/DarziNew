@@ -106,32 +106,38 @@ function seed() {
   cats.forEach((c, i) => cat.run(c[0], c[1], J(c[2]), J(c[3]), c[4], i));
   const cid = Object.fromEntries(db.prepare('SELECT slug,id FROM categories').all().map(r => [r.slug, r.id]));
 
-    const DESIGN_ITEMS = [
-    ['shirts', 'Classic Formal Shirt', 'men', 549, '#c9d6df', 'Full sleeve, spread collar, single-needle stitching.', 1, 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80'],
-    ['shirts', 'Mandarin Collar Linen Shirt', 'men', 649, '#d9cdb4', 'Band collar, relaxed fit, ideal for summer.', 1, 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80'],
-    ['shirts', 'Casual Check Shirt', 'men', 599, '#b9a28a', 'Button-down collar with chest pocket.', 0, 'https://images.unsplash.com/photo-1589310243389-96a5483213a8?auto=format&fit=crop&w=800&q=80'],
-    ['pants', 'Slim Fit Trousers', 'men', 699, '#4d5a52', 'Flat front, tapered leg, belt loops.', 1, 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=80'],
-    ['pants', 'Pleated Formal Trousers', 'men', 749, '#6b6f73', 'Double pleat, comfortable rise, side adjusters.', 0, 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80'],
-    ['pants', 'Everyday Chinos', 'men', 649, '#c2b08a', 'Slanted pockets, clean finish.', 0, 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80'],
-    ['kurtas', 'Straight Cotton Kurta', 'men', 799, '#e6dfcf', 'Collar neck, side slits, placket detail.', 1, 'https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?auto=format&fit=crop&w=800&q=80'],
-    ['kurtas', 'Pathani Kurta Set', 'men', 1099, '#3f4a44', 'Pathani kurta with matching salwar.', 0, 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'],
-    ['kurtas', 'Anarkali Kurta', 'women', 1399, '#8a5a4a', 'Flared silhouette with fitted bodice.', 1, 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=800&q=80'],
-    ['kurtas', 'Straight Cut Kurti', 'women', 899, '#9bb0a0', 'Side slits, three-quarter sleeves.', 0, 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80'],
-    ['suits', 'Two-Piece Suit', 'men', 4499, '#3a3f45', 'Single-breasted jacket with trousers, half canvas.', 1, 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&w=800&q=80'],
-    ['suits', 'Three-Piece Suit', 'men', 5999, '#2f3a36', 'Jacket, waistcoat and trousers.', 0, 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80'],
-    ['suits', 'Women\'s Trouser Suit', 'women', 3999, '#5a5048', 'Tailored blazer with straight trousers.', 0, 'https://images.unsplash.com/photo-1548624313-0396c75e4b1a?auto=format&fit=crop&w=800&q=80'],
-    ['suits', 'Punjabi Salwar Suit', 'women', 1499, '#7d8f86', 'Kameez with salwar and dupatta finishing.', 0, 'https://images.unsplash.com/photo-1610030469668-8e9f641aaf27?auto=format&fit=crop&w=800&q=80'],
-    ['blouses', 'Princess Cut Blouse', 'women', 599, '#a35d4a', 'Princess seams, back hook closure.', 1, 'https://images.unsplash.com/photo-1610030469978-6bb537f3b982?auto=format&fit=crop&w=800&q=80'],
-    ['blouses', 'Boat Neck Blouse', 'women', 649, '#2f4a3b', 'Wide boat neckline, elbow sleeves.', 0, 'https://images.unsplash.com/photo-1614252369475-531eba835eb1?auto=format&fit=crop&w=800&q=80'],
-    ['blouses', 'Back-Open Designer Blouse', 'women', 899, '#b08d57', 'Deep back with tie-up detail.', 0, 'https://images.unsplash.com/photo-1583391733981-8b530b760347?auto=format&fit=crop&w=800&q=80'],
-    ['other', 'Nehru Jacket', 'men', 1799, '#4a4f4c', 'Mandarin collar waistcoat jacket.', 0, 'https://images.unsplash.com/photo-1594938328870-9623159c8c99?auto=format&fit=crop&w=800&q=80'],
-    ['other', 'Palazzo Pants', 'women', 549, '#c9b8a0', 'Wide leg with elastic waist.', 0, 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80']
+      const DESIGN_ITEMS = [
+    // Men's Shirts (crisp shirt product shots)
+    ['shirts', 'Classic Formal Shirt', 'men', 549, '#c9d6df', 'Full sleeve, spread collar, single-needle stitching.', 1, 'https://images.pexels.com/photos/297933/pexels-photo-297933.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['shirts', 'Mandarin Collar Linen Shirt', 'men', 649, '#d9cdb4', 'Band collar, relaxed fit, ideal for summer.', 1, 'https://images.pexels.com/photos/769733/pexels-photo-769733.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['shirts', 'Casual Check Shirt', 'men', 599, '#b9a28a', 'Button-down collar with chest pocket.', 0, 'https://images.pexels.com/photos/769749/pexels-photo-769749.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    // Men's Trousers & Chinos (trouser product shots)
+    ['pants', 'Slim Fit Trousers', 'men', 699, '#4d5a52', 'Flat front, tapered leg, belt loops.', 1, 'https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['pants', 'Pleated Formal Trousers', 'men', 749, '#6b6f73', 'Double pleat, comfortable rise, side adjusters.', 0, 'https://images.pexels.com/photos/52518/jeans-pants-blue-shop-52518.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['pants', 'Everyday Chinos', 'men', 649, '#c2b08a', 'Slanted pockets, clean finish.', 0, 'https://images.pexels.com/photos/1082529/pexels-photo-1082529.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    // Kurtas (gender-matched Men & Women)
+    ['kurtas', 'Straight Cotton Kurta', 'men', 799, '#e6dfcf', 'Collar neck, side slits, placket detail.', 1, 'https://images.pexels.com/photos/2897531/pexels-photo-2897531.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['kurtas', 'Pathani Kurta Set', 'men', 1099, '#3f4a44', 'Pathani kurta with matching salwar.', 0, 'https://images.pexels.com/photos/3755706/pexels-photo-3755706.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['kurtas', 'Anarkali Kurta', 'women', 1399, '#8a5a4a', 'Flared silhouette with fitted bodice.', 1, 'https://images.pexels.com/photos/2065195/pexels-photo-2065195.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['kurtas', 'Straight Cut Kurti', 'women', 899, '#9bb0a0', 'Side slits, three-quarter sleeves.', 0, 'https://images.pexels.com/photos/6311612/pexels-photo-6311612.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    // Suits (gender-matched Men's tailored suits & Women's suits)
+    ['suits', 'Two-Piece Suit', 'men', 4499, '#3a3f45', 'Single-breasted jacket with trousers, half canvas.', 1, 'https://images.pexels.com/photos/325876/pexels-photo-325876.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['suits', 'Three-Piece Suit', 'men', 5999, '#2f3a36', 'Jacket, waistcoat and trousers.', 0, 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['suits', "Women's Trouser Suit", 'women', 3999, '#5a5048', 'Tailored blazer with straight trousers.', 0, 'https://images.pexels.com/photos/5325881/pexels-photo-5325881.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['suits', 'Punjabi Salwar Suit', 'women', 1499, '#7d8f86', 'Kameez with salwar and dupatta finishing.', 0, 'https://images.pexels.com/photos/1462637/pexels-photo-1462637.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    // Women's Blouses (dedicated women's blouse garment shots, NO men!)
+    ['blouses', 'Princess Cut Blouse', 'women', 599, '#a35d4a', 'Princess seams, back hook closure.', 1, 'https://images.pexels.com/photos/6311392/pexels-photo-6311392.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['blouses', 'Boat Neck Blouse', 'women', 649, '#2f4a3b', 'Wide boat neckline, elbow sleeves.', 0, 'https://images.pexels.com/photos/6311650/pexels-photo-6311650.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['blouses', 'Back-Open Designer Blouse', 'women', 899, '#b08d57', 'Deep back with tie-up detail.', 0, 'https://images.pexels.com/photos/6311579/pexels-photo-6311579.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    // Other clothing
+    ['other', 'Nehru Jacket', 'men', 1799, '#4a4f4c', 'Mandarin collar waistcoat jacket.', 0, 'https://images.pexels.com/photos/1300550/pexels-photo-1300550.jpeg?auto=compress&cs=tinysrgb&w=800'],
+    ['other', 'Palazzo Pants', 'women', 549, '#c9b8a0', 'Wide leg with elastic waist.', 0, 'https://images.pexels.com/photos/6311600/pexels-photo-6311600.jpeg?auto=compress&cs=tinysrgb&w=800']
   ];
 
   const des = db.prepare('INSERT INTO designs(category_id,name,gender,price,color,description,featured,image_url) VALUES(?,?,?,?,?,?,?,?)');
   DESIGN_ITEMS.forEach(d => des.run(cid[d[0]], d[1], d[2], d[3], d[4], d[5], d[6], d[7]));
-
-  const fab = db.prepare('INSERT INTO fabrics(name,description,price_per_m,cost_per_m,colors,stock_m) VALUES(?,?,?,?,?,?)');
+  
+    const fab = db.prepare('INSERT INTO fabrics(name,description,price_per_m,cost_per_m,colors,stock_m) VALUES(?,?,?,?,?,?)');
   const C = (...p) => p.map(x => ({ name: x[0], hex: x[1] }));
   [
     ['Cotton', 'Soft, breathable everyday cotton. Easy to wash.', 220, 160, C(['White', '#f4f1ea'], ['Sky Blue', '#b8cad6'], ['Sand', '#d6c7a8'], ['Olive', '#7a8264']), 200],
@@ -148,29 +154,30 @@ seed();
 // Backfill real garment photos onto existing Render database designs that still have NULL image_url
 (function syncDesignPhotos() {
   const photos = {
-    'Classic Formal Shirt': 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80',
-    'Mandarin Collar Linen Shirt': 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80',
-    'Casual Check Shirt': 'https://images.unsplash.com/photo-1589310243389-96a5483213a8?auto=format&fit=crop&w=800&q=80',
-    'Slim Fit Trousers': 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=80',
-    'Pleated Formal Trousers': 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80',
-    'Everyday Chinos': 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80',
-    'Straight Cotton Kurta': 'https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?auto=format&fit=crop&w=800&q=80',
-    'Pathani Kurta Set': 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
-    'Anarkali Kurta': 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=800&q=80',
-    'Straight Cut Kurti': 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80',
-    'Two-Piece Suit': 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&w=800&q=80',
-    'Three-Piece Suit': 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
-    "Women's Trouser Suit": 'https://images.unsplash.com/photo-1548624313-0396c75e4b1a?auto=format&fit=crop&w=800&q=80',
-    'Punjabi Salwar Suit': 'https://images.unsplash.com/photo-1610030469668-8e9f641aaf27?auto=format&fit=crop&w=800&q=80',
-    'Princess Cut Blouse': 'https://images.unsplash.com/photo-1610030469978-6bb537f3b982?auto=format&fit=crop&w=800&q=80',
-    'Boat Neck Blouse': 'https://images.unsplash.com/photo-1614252369475-531eba835eb1?auto=format&fit=crop&w=800&q=80',
-    'Back-Open Designer Blouse': 'https://images.unsplash.com/photo-1583391733981-8b530b760347?auto=format&fit=crop&w=800&q=80',
-    'Nehru Jacket': 'https://images.unsplash.com/photo-1594938328870-9623159c8c99?auto=format&fit=crop&w=800&q=80',
-    'Palazzo Pants': 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80'
+    'Classic Formal Shirt': 'https://images.pexels.com/photos/297933/pexels-photo-297933.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Mandarin Collar Linen Shirt': 'https://images.pexels.com/photos/769733/pexels-photo-769733.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Casual Check Shirt': 'https://images.pexels.com/photos/769749/pexels-photo-769749.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Slim Fit Trousers': 'https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Pleated Formal Trousers': 'https://images.pexels.com/photos/52518/jeans-pants-blue-shop-52518.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Everyday Chinos': 'https://images.pexels.com/photos/1082529/pexels-photo-1082529.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Straight Cotton Kurta': 'https://images.pexels.com/photos/2897531/pexels-photo-2897531.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Pathani Kurta Set': 'https://images.pexels.com/photos/3755706/pexels-photo-3755706.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Anarkali Kurta': 'https://images.pexels.com/photos/2065195/pexels-photo-2065195.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Straight Cut Kurti': 'https://images.pexels.com/photos/6311612/pexels-photo-6311612.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Two-Piece Suit': 'https://images.pexels.com/photos/325876/pexels-photo-325876.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Three-Piece Suit': 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=800',
+    "Women's Trouser Suit": 'https://images.pexels.com/photos/5325881/pexels-photo-5325881.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Punjabi Salwar Suit': 'https://images.pexels.com/photos/1462637/pexels-photo-1462637.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Princess Cut Blouse': 'https://images.pexels.com/photos/6311392/pexels-photo-6311392.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Boat Neck Blouse': 'https://images.pexels.com/photos/6311650/pexels-photo-6311650.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Back-Open Designer Blouse': 'https://images.pexels.com/photos/6311579/pexels-photo-6311579.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Nehru Jacket': 'https://images.pexels.com/photos/1300550/pexels-photo-1300550.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'Palazzo Pants': 'https://images.pexels.com/photos/6311600/pexels-photo-6311600.jpeg?auto=compress&cs=tinysrgb&w=800'
   };
-  const upd = db.prepare("UPDATE designs SET image_url=? WHERE name=? AND (image_url IS NULL OR image_url='')");
+  const upd = db.prepare('UPDATE designs SET image_url=? WHERE name=?');
   for (const [name, url] of Object.entries(photos)) upd.run(url, name);
 })();
+
 
 // Demo accounts (development only). Set SEED_DEMO=0 to skip them.
 function seedDemo() {
