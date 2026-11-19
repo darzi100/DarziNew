@@ -314,6 +314,16 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
     return { sent: true, testMode: true, console: true };
   }
   return { sent: true, testMode: true, devOtp: code };
+```[span_1](start_span)[span_1](end_span)
+
+Meanwhile, in **`core.js`** (inside `D.forms['otp-request']`), we wrote `r.otp` instead of `r.devOtp`! That's why the customer's phone isn't showing the test OTP box on screen—`server.js` sends `devOtp`, while `core.js` was looking for `otp`[span_2](start_span)[span_2](end_span).
+
+### Quick 1-Line Fix in `core.js`
+Open **`core.js`** on GitHub, go down to `D.forms['otp-request']` (around **line 309**), and change `r.otp` to `r.devOtp`:
+
+```javascript
+D.auth.mobile = mobile; D.auth.step = 'otp'; D.auth.consoleOtp = r.devOtp || null; drawLogin();
+
 });
 route('POST', '/api/upload', ['customer', 'tailor', 'admin'], async ({ body }) => ({ url: await saveUpload(body.dataUrl) }));
 route('POST', '/api/auth/verify', null, ({ body, res }) => {
