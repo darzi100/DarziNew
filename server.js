@@ -40,7 +40,7 @@ const num = (v, min, max, label) => {
   const n = Number(v); if (!Number.isFinite(n) || n < min || n > max) throw bad(`${label} must be between ${min} and ${max}`); return n;
 };
 const MOBILE = /^[6-9]\d{9}$/;
-const UPLOAD_RE = /^\/uploads\/[a-f0-9]{32}\.(png|jpg|webp)$/;
+const UPLOAD_RE = /^(?:\/uploads\/[a-f0-9]{32}\.(png|jpg|webp)|https:\/\/res\.cloudinary\.com\/[^"'\s]+\.(png|jpg|jpeg|webp))$/;
 const photoList = (arr, max) => {
   if (arr == null) return [];
   if (!Array.isArray(arr) || arr.length > max) throw bad(`At most ${max} photos allowed`);
@@ -166,11 +166,22 @@ function cancelOrder(o, by, reason) {
 }
 
 // ---------- uploads ----------
-function saveUpload(dataUrl) {
+async function saveUpload(dataUrl) {
   const m = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
   if (!m) throw bad('Please upload a PNG, JPG or WebP image');
   const buf = Buffer.from(m[2], 'base64');
   if (buf.length > 3 * 1024 * 1024) throw bad('Image must be under 3 MB');
+
+  if (process.env.CLOUDINARY_CLOUD && process.env.CLOUDINARY_PRESET) {
+    const form = new FormData();
+    form.append('file', dataUrl);
+    form.append('upload_preset', process.env.CLOUDINARY_PRESET);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: form });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.secure_url) throw new HttpError(502, 'Image upload failed');
+    return j.secure_url;
+  }
+
   const isPng = buf.slice(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
   const isJpg = buf[0] === 0xff && buf[1] === 0xd8;
   const isWebp = buf.slice(0, 4).toString() === 'RIFF' && buf.slice(8, 12).toString() === 'WEBP';
@@ -304,7 +315,7 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   }
   return { sent: true, testMode: true, devOtp: code };
 });
-route('POST', '/api/auth/verify', null, ({ body, res }) => {
+route('POST', '/api/upload', ['customer', 'tailor', 'admin'], async ({ body }) => ({ url: await saveUpload(body.dataUrl) }));
   const mobile = String(body.mobile || '').trim(), code = String(body.code || '').trim();
   if (!MOBILE.test(mobile) || !/^\d{6}$/.test(code)) throw bad('Enter the 6-digit OTP');
   const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
@@ -843,8 +854,7 @@ route('DELETE', '/api/admin/fabrics/:id', A, ({ params }) => { run('UPDATE fabri
 // ---------- server ----------
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.json': 'application/json', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
 const PUB = __dirname;
-const CSP = "default-src 'self'; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com; script-src 'self' https://unpkg.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
-
+const CSP = "default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.org https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com; script-src 'self' https://unpkg.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 function sendJSON(res, code, obj) {
   const b = JSON.stringify(obj); res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(b);
 }
