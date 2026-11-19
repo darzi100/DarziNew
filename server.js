@@ -304,10 +304,7 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
     return { sent: true, testMode: false };
   }
 
-  run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
-  run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
-
-  const h = req && req.headers ? req.headers : {};
+  const h = (req && req.headers) || {};
   const viaProxy = !!(h['cf-connecting-ip'] || h['x-forwarded-for'] || h.forwarded);
   const roleRecord = get('SELECT role FROM users WHERE mobile=?', mobile);
   const role = roleRecord ? roleRecord.role : null;
@@ -320,19 +317,25 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   return { sent: true, testMode: true, devOtp: code };
 });
 
-
-
+route('POST', '/api/upload', ['customer', 'tailor', 'admin'], async ({ body }) => ({ url: await saveUpload(body.dataUrl) }));
+route('POST', '/api/auth/verify', null, ({ body, res }) => {
+  const mobile = String(body.mobile || '').trim(), code = String(body.code || '').trim();
+  const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
+  if (!o || o.expires < Date.now()) throw bad('OTP expired. Please request a new one.');
+  if (o.attempts >= 5) throw new HttpError(429, 'Too many wrong attempts. Request a new OTP.');
+  const a = Buffer.from(hashOtp(mobile, code)), b = Buffer.from(o.code_hash);
+  if (!crypto.timingSafeEqual(a, b)) {
+    run('UPDATE otps SET attempts=attempts+1 WHERE mobile=?', mobile);
+    throw bad('Incorrect OTP');
+  }
+  let user = get('SELECT * FROM users WHERE mobile=?', mobile);
+  const intent = body.intent === 'tailor' ? 'tailor' : 'customer';
+  if (!user) {
+    if (!body.name) return { needsName: true };
+    const name = str(body.name, 2, 60, 'Name');
     const email = body.email ? str(body.email, 3, 120, 'Email') : null;
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter a valid email');
-    tx(() => {
-      const id = Number(run('INSERT INTO users(name,mobile,email,role) VALUES(?,?,?,?)', name, mobile, email, intent).lastInsertRowid);
-      if (intent === 'tailor') run('INSERT INTO tailors(user_id) VALUES(?)', id);
-    });
-    user = get('SELECT * FROM users WHERE mobile=?', mobile);
-  } else if (intent === 'tailor' && user.role === 'customer') {
-    throw bad('This mobile number is registered as a customer account.');
-  }
-  if (user.status === 'suspended') throw new HttpError(403, 'This account is suspended. Please contact support.');
+
   run('DELETE FROM otps WHERE mobile=?', mobile);
   startSession(res, user.id);
   return meView(user);
