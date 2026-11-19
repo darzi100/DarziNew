@@ -369,11 +369,14 @@ route('POST', '/api/notifications/read', ['customer', 'tailor', 'admin'], ({ use
 function addressInput(b) {
   const lat = b.lat === '' || b.lat == null ? null : num(b.lat, -90, 90, 'Latitude');
   const lng = b.lng === '' || b.lng == null ? null : num(b.lng, -180, 180, 'Longitude');
-  if (pin AA !/^\d{6}$/.test(pin))
+  if ((lat == null) !== (lng == null)) throw bad('Provide both latitude and longitude, or neither');
   const pin = b.pincode ? String(b.pincode).trim() : null;
-  if (pin && !/^\d{6}$/.test(pin)) throw bad('Pincode must be 6 digits');
+  if (pin) {
+    if (!/^\d{6}$/.test(pin)) throw bad('Pincode must be 6 digits');
+  }
   return { label: optStr(b.label, 30, 'Label') || 'Home', line: str(b.line, 5, 200, 'Address'), landmark: optStr(b.landmark, 100, 'Landmark'), pincode: pin, lat, lng };
 }
+
 route('GET', '/api/addresses', ['customer'], ({ user }) => all('SELECT * FROM addresses WHERE user_id=? ORDER BY is_default DESC, id', user.id));
 route('POST', '/api/addresses', ['customer'], ({ user, body }) => {
   const a = addressInput(body);
