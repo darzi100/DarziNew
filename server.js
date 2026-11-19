@@ -822,7 +822,7 @@ route('DELETE', '/api/admin/fabrics/:id', A, ({ params }) => { run('UPDATE fabri
 
 // ---------- server ----------
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.json': 'application/json', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
-const PUB = path.join(__dirname, 'public');
+const PUB = __dirname;
 const CSP = "default-src 'self'; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com; script-src 'self' https://unpkg.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
 function sendJSON(res, code, obj) {
