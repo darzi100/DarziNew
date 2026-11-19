@@ -317,7 +317,6 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   return { sent: true, testMode: true, devOtp: code };
 
 route('POST', '/api/auth/verify', null, ({ body, res }) => {
-route('POST', '/api/auth/verify', null, ({ body, res }) => {
   const mobile = String(body.mobile || '').trim();
   const code = String(body.code || '').trim();
   const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
@@ -329,16 +328,27 @@ route('POST', '/api/auth/verify', null, ({ body, res }) => {
     run('UPDATE otps SET attempts=attempts+1 WHERE mobile=?', mobile);
     throw bad('Incorrect OTP');
   }
+  let user = get('SELECT * FROM users WHERE mobile=?', mobile);
+  const intent = body.intent === 'tailor' ? 'tailor' : 'customer';
   if (!user) {
     if (!body.name) return { needsName: true };
     const name = str(body.name, 2, 60, 'Name');
     const email = body.email ? str(body.email, 3, 120, 'Email') : null;
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter a valid email');
-
+    tx(() => {
+      const id = Number(run('INSERT INTO users(name,mobile,email,role) VALUES(?,?,?,?)', name, mobile, email, intent).lastInsertRowid);
+      if (intent === 'tailor') run('INSERT INTO tailors(user_id) VALUES(?)', id);
+    });
+    user = get('SELECT * FROM users WHERE mobile=?', mobile);
+  } else if (intent === 'tailor' && user.role === 'customer') {
+    throw bad('This mobile number is registered as a customer account.');
+  }
+  if (user.status === 'suspended') throw new HttpError(403, 'This account is suspended. Please contact support.');
   run('DELETE FROM otps WHERE mobile=?', mobile);
   startSession(res, user.id);
   return meView(user);
 });
+
 route('POST', '/api/logout', ['customer', 'tailor', 'admin'], ({ user, res }) => {
   run('DELETE FROM sessions WHERE token=?', user.token);
   res.setHeader('Set-Cookie', 'sid=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0'); return { ok: true };
