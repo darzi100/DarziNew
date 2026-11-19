@@ -297,11 +297,6 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   if (recent >= 5) throw new HttpError(429, 'Too many OTP requests. Please try again in a few minutes.');
   const code = String(crypto.randomInt(100000, 1000000));
   if (OTP_MODE === 'sms') {
-    await sendSms(mobile, code); // the code is stored only after the SMS was accepted
-    run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
-    run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
-    return { sent: true, testMode: false }; // the code is never returned to the browser in sms mode
-  }
   run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
   run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
 
@@ -317,12 +312,6 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   return { sent: true, testMode: true, devOtp: code };
 });
 
-  if (!crypto.timingSafeEqual(a, b)) { run('UPDATE otps SET attempts=attempts+1 WHERE mobile=?', mobile); throw bad('Incorrect OTP'); }
-  let user = get('SELECT * FROM users WHERE mobile=?', mobile);
-  const intent = body.intent === 'tailor' ? 'tailor' : 'customer';
-  if (!user) {
-    if (!body.name) return { needsName: true }; // OTP stays valid so the user can add their name
-    const name = str(body.name, 2, 60, 'Name');
     const email = body.email ? str(body.email, 3, 120, 'Email') : null;
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter a valid email');
     tx(() => {
