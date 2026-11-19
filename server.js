@@ -478,21 +478,66 @@ function ownOrder(user, id) {
   if (!o) throw new HttpError(404, 'Order not found'); return o;
 }
 route('GET', '/api/orders/:id', ['customer'], ({ user, params }) => shapeOrder(ownOrder(user, params.id), 'customer'));
-route('POST', '/api/orders/:id/pay', ['customer'], ({ user, params, body }) => {
+route('POST', '/api/orders/:id/razorpay-order', ['customer'], async ({ user, params }) => {
   const o = ownOrder(user, params.id);
-  if (PAYMENT_MODE !== 'test') throw new HttpError(501, 'Razorpay checkout is not wired into this build yet.');
   if (o.status === 'Cancelled') throw bad('This order was cancelled');
   if (o.payment_status === 'paid') throw bad('This order is already paid');
-  const method = body.method === 'online' ? 'online' : 'upi';
-  if (method === 'upi' && !/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(String(body.upi_id || ''))) throw bad('Enter a valid UPI ID, for example name@bank');
+  const keyId = process.env.RAZORPAY_KEY_ID, keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) throw new HttpError(503, 'Razorpay keys are not configured');
+
+  const amountPaise = Math.round(o.total * 100);
+  if (amountPaise < 100) throw bad('Order amount must be at least ₹1');
+
+  const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+  const r = await fetch('https://api.razorpay.com/v1/orders', {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: amountPaise, currency: 'INR', receipt: o.code })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) throw new HttpError(401, 'Razorpay authentication failed');
+  if (!r.ok || !j.id) throw new HttpError(502, 'Could not start Razorpay checkout');
+
+  return {
+    key: keyId,
+    order_id: j.id,
+    amount: j.amount,
+    currency: j.currency,
+    code: o.code,
+    customer: { name: user.name, contact: user.mobile, email: user.email || '' }
+  };
+});
+
+route('POST', '/api/orders/:id/razorpay-verify', ['customer'], ({ user, params, body }) => {
+  const o = ownOrder(user, params.id);
+  if (o.payment_status === 'paid') return shapeOrder(o, 'customer');
+
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body || {};
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    throw bad('Missing payment confirmation details');
+  }
+
+  const expected = crypto
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    .digest('hex');
+
+  if (expected !== razorpay_signature) throw bad('Payment signature verification failed');
+
   tx(() => {
-    run('INSERT INTO payments(order_id,type,amount,method,status,ref) VALUES(?,?,?,?,?,?)', o.id, 'payment', o.total, method, 'paid', 'TEST-' + crypto.randomBytes(5).toString('hex').toUpperCase());
+    run(
+      'INSERT INTO payments(order_id,type,amount,method,status,ref) VALUES(?,?,?,?,?,?)',
+      o.id, 'payment', o.total, 'razorpay', 'paid', razorpay_payment_id
+    );
     run("UPDATE orders SET payment_status='paid' WHERE id=?", o.id);
-    setStatus(o, 'Order Confirmed', user.id, 'Payment received (test mode)');
-    if (o.measure_mode === 'home') setStatus(o, 'Measurement Pending', user.id, `Home measurement ${o.appt_date}, ${o.appt_slot}`);
+    setStatus(o, 'Order Confirmed', user.id, 'Payment received via Razorpay');
+    if (o.measure_mode === 'home') {
+      setStatus(o, 'Measurement Pending', user.id, `Home measurement ${o.appt_date}, ${o.appt_slot}`);
+    }
     notifyAdmins(`New paid order ${o.code}`, o.id);
   });
-  return { ...shapeOrder(get('SELECT * FROM orders WHERE id=?', o.id), 'customer'), testMode: true };
+
+  return shapeOrder(get('SELECT * FROM orders WHERE id=?', o.id), 'customer');
 });
 // Pay by UPI or cash on delivery. No gateway involved; the admin records the payment when money is received.
 route('POST', '/api/orders/:id/pay-later', ['customer'], ({ user, params }) => {
@@ -798,7 +843,7 @@ route('GET', '/api/admin/finance', A, () => {
       UNION ALL SELECT ts,'payout',amount,'manual','paid',note,NULL FROM payouts ORDER BY ts DESC LIMIT 100`)
   };
 });
-route('POST', '/api/admin/payouts', A, ({ body }) => {
+route('POST', '/api/admin/payouts', A, ({ body }) => 
   const tid = idp(body.tailor_id), amount = Math.round(num(body.amount, 1, 1e7, 'Amount'));
   if (!get("SELECT 1 x FROM tailors WHERE user_id=?", tid)) throw bad('Unknown tailor');
   const earned = get("SELECT COALESCE(SUM(tailor_payable),0) s FROM orders WHERE tailor_id=? AND status='Delivered'", tid).s;
@@ -821,39 +866,9 @@ route('POST', '/api/admin/categories', A, ({ body }) => {
 route('PUT', '/api/admin/categories/:id', A, ({ params, body }) => {
   const c = categoryInput(body); run('UPDATE categories SET name=?,sizes=?,fields=?,fabric_m=?,active=? WHERE id=?', c.name, J(c.sizes), J(c.fields), c.fabric_m, c.active, idp(params.id)); return { ok: true };
 });
-route('DELETE', '/api/admin/categories/:id', A, ({ params }) => {
-  const id = idp(params.id);
-  if (get('SELECT 1 x FROM designs WHERE category_id=?', id) || get('SELECT 1 x FROM orders WHERE category_id=?', id)) { run('UPDATE categories SET active=0 WHERE id=?', id); return { ok: true, deactivated: true }; }
-  run('DELETE FROM categories WHERE id=?', id); return { ok: true };
-});
-route('GET', '/api/admin/designs', A, () => all('SELECT d.*, c.name category FROM designs d JOIN categories c ON c.id=d.category_id ORDER BY d.id DESC'));
-function designInput(b) {
-  if (!get('SELECT 1 x FROM categories WHERE id=?', idp(b.category_id))) throw bad('Choose a category');
-  const img = b.image_url ? String(b.image_url) : null; if (img && !UPLOAD_RE.test(img)) throw bad('Invalid image');
-  const color = /^#[0-9a-fA-F]{6}$/.test(b.color || '') ? b.color : '#d9cdb4';
-  return [Number(b.category_id), str(b.name, 2, 80, 'Name'), ['men', 'women', 'unisex'].includes(b.gender) ? b.gender : 'unisex', Math.round(num(b.price, 1, 200000, 'Stitching price')), color, img, optStr(b.description, 300, 'Description'), b.featured ? 1 : 0, b.active === false ? 0 : 1];
-}
-route('POST', '/api/admin/designs', A, ({ body }) => { run('INSERT INTO designs(category_id,name,gender,price,color,image_url,description,featured,active) VALUES(?,?,?,?,?,?,?,?,?)', ...designInput(body)); return { ok: true }; });
-route('PUT', '/api/admin/designs/:id', A, ({ params, body }) => { run('UPDATE designs SET category_id=?,name=?,gender=?,price=?,color=?,image_url=?,description=?,featured=?,active=? WHERE id=?', ...designInput(body), idp(params.id)); return { ok: true }; });
-route('DELETE', '/api/admin/designs/:id', A, ({ params }) => { // soft delete keeps order history intact
-  const id = idp(params.id); run('UPDATE designs SET active=0, featured=0 WHERE id=?', id); run('DELETE FROM favorites WHERE design_id=?', id); return { ok: true };
-});
-route('GET', '/api/admin/fabrics', A, () => all('SELECT * FROM fabrics ORDER BY id DESC').map(f => ({ ...f, colors: P(f.colors, []) })));
-function fabricInput(b) {
-  const colors = (Array.isArray(b.colors) ? b.colors : []).map(c => ({ name: str(c.name, 1, 30, 'Colour name'), hex: /^#[0-9a-fA-F]{6}$/.test(c.hex || '') ? c.hex : '#cccccc' }));
-  if (!colors.length) throw bad('Add at least one colour');
-  const img = b.image_url ? String(b.image_url) : null; if (img && !UPLOAD_RE.test(img)) throw bad('Invalid image');
-  const price = Math.round(num(b.price_per_m, 1, 100000, 'Price per metre')), cost = Math.round(num(b.cost_per_m, 0, 100000, 'Cost per metre'));
-  return [str(b.name, 2, 60, 'Name'), optStr(b.description, 300, 'Description'), price, cost, J(colors), img, num(b.stock_m, 0, 100000, 'Stock'), b.active === false ? 0 : 1];
-}
-route('POST', '/api/admin/fabrics', A, ({ body }) => { run('INSERT INTO fabrics(name,description,price_per_m,cost_per_m,colors,image_url,stock_m,active) VALUES(?,?,?,?,?,?,?,?)', ...fabricInput(body)); return { ok: true }; });
-route('PUT', '/api/admin/fabrics/:id', A, ({ params, body }) => { run('UPDATE fabrics SET name=?,description=?,price_per_m=?,cost_per_m=?,colors=?,image_url=?,stock_m=?,active=? WHERE id=?', ...fabricInput(body), idp(params.id)); return { ok: true }; });
-route('DELETE', '/api/admin/fabrics/:id', A, ({ params }) => { run('UPDATE fabrics SET active=0 WHERE id=?', idp(params.id)); return { ok: true }; });
-
-// ---------- server ----------
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.json': 'application/json', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
-const PUB = __dirname;
-const CSP = "default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.org https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com; script-src 'self' https://unpkg.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon' };
+const PUB = path.join(__dirname, 'public');
+const CSP = "default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.org https://unpkg.com https://*.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com; script-src 'self' https://unpkg.com https://checkout.razorpay.com; connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 function sendJSON(res, code, obj) {
   const b = JSON.stringify(obj); res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(b);
 }
