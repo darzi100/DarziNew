@@ -842,6 +842,8 @@ function serveFile(res, file, cache) {
     res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': cache, 'X-Content-Type-Options': 'nosniff' }); res.end(buf);
   });
 }
+console.log('PUBLIC DIRECTORY:', PUB);
+console.log('INDEX EXISTS:', fs.existsSync(path.join(PUB, 'index.html')));
 const server = http.createServer(async (req, res) => {
   res.setHeader('Content-Security-Policy', CSP); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'same-origin'); res.setHeader('X-Frame-Options', 'DENY');
   const url = new URL(req.url, 'http://x'); const pathname = decodeURIComponent(url.pathname);
