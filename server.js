@@ -356,8 +356,6 @@ route('PUT', '/api/me', ['customer', 'tailor', 'admin'], ({ user, body }) => {
   run('UPDATE users SET name=?, email=? WHERE id=?', name, email, user.id);
   return meView({ ...user, name, email });
 });
-route('POST', '/api/upload', ['customer', 'tailor', 'admin'], ({ body }) => ({ url: saveUpload(body.dataUrl) }));
-
 // notifications
 route('GET', '/api/notifications', ['customer', 'tailor', 'admin'], ({ user }) => all('SELECT id,text,order_id,read,ts FROM notifications WHERE user_id=? ORDER BY id DESC LIMIT 50', user.id));
 route('POST', '/api/notifications/read', ['customer', 'tailor', 'admin'], ({ user }) => { run('UPDATE notifications SET read=1 WHERE user_id=?', user.id); return { ok: true }; });
