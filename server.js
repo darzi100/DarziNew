@@ -302,20 +302,21 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
     run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
     return { sent: true, testMode: false }; // the code is never returned to the browser in sms mode
   }
-    run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
+  run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
   run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
 
   const h = (req && req.headers) || {};
   const viaProxy = !!(h['cf-connecting-ip'] || h['x-forwarded-for'] || h.forwarded);
   const role = (get('SELECT role FROM users WHERE mobile=?', mobile) || {}).role;
 
-        if (viaProxy && (role === 'admin' || role === 'tailor')) }
+  if (viaProxy && (role === 'admin' || role === 'tailor')) {
     console.log(`[TEST OTP] ${mobile}: ${code}`);
     return { sent: true, testMode: true, console: true };
   }
 
   return { sent: true, testMode: true, devOtp: code };
 });
+
   if (!crypto.timingSafeEqual(a, b)) { run('UPDATE otps SET attempts=attempts+1 WHERE mobile=?', mobile); throw bad('Incorrect OTP'); }
   let user = get('SELECT * FROM users WHERE mobile=?', mobile);
   const intent = body.intent === 'tailor' ? 'tailor' : 'customer';
