@@ -302,28 +302,20 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
     run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
     return { sent: true, testMode: false }; // the code is never returned to the browser in sms mode
   }
-  run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
+    run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
   run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
-  // TEST MODE ONLY. Behind a public tunnel/proxy, never show the code on screen for admin or tailor accounts,
-  // otherwise anyone with the link could log in as them. Print it in the server window instead.
+
   const h = (req && req.headers) || {};
   const viaProxy = !!(h['cf-connecting-ip'] || h['x-forwarded-for'] || h.forwarded);
   const role = (get('SELECT role FROM users WHERE mobile=?', mobile) || {}).role;
-    if (viaProxy && (role === 'admin' || role === 'tailor')) {
+
+  if (viaProxy && (role === 'admin' || role === 'tailor')) {
     console.log(`[TEST OTP] ${mobile}: ${code}`);
     return { sent: true, testMode: true, console: true };
   }
 
   return { sent: true, testMode: true, devOtp: code };
 });
-
-route('POST', '/api/upload', ['customer', 'tailor', 'admin'], async ({ body }) => ({ url: await saveUpload(body.dataUrl) }));
-route('POST', '/api/auth/verify', null, ({ body, res }) => {
-  const mobile = String(body.mobile || '').trim(), code = String(body.code || '').trim();
-  const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
-  if (!o || o.expires < Date.now()) throw bad('OTP expired. Please request a new one.');
-  if (o.attempts >= 5) throw new HttpError(429, 'Too many wrong attempts. Request a new OTP.');
-  const a = Buffer.from(hashOtp(mobile, code)), b = Buffer.from(o.code_hash);
   if (!crypto.timingSafeEqual(a, b)) { run('UPDATE otps SET attempts=attempts+1 WHERE mobile=?', mobile); throw bad('Incorrect OTP'); }
   let user = get('SELECT * FROM users WHERE mobile=?', mobile);
   const intent = body.intent === 'tailor' ? 'tailor' : 'customer';
