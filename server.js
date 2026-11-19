@@ -304,20 +304,18 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
     return { sent: true, testMode: false };
   }
 
-  const h = (req && req.headers) || {};
+  const h = req && req.headers ? req.headers : {};
   const viaProxy = !!(h['cf-connecting-ip'] || h['x-forwarded-for'] || h.forwarded);
   const roleRecord = get('SELECT role FROM users WHERE mobile=?', mobile);
   const role = roleRecord ? roleRecord.role : null;
 
-  if (viaProxy && (role === 'admin' || role === 'tailor'))
-    console.log(`[TEST OTP] ${mobile}: ${code}`);
+  if (viaProxy && (role === 'admin' || role === 'tailor')) {
+    console.log('[TEST OTP] ' + mobile + ': ' + code);
     return { sent: true, testMode: true, console: true };
   }
 
   return { sent: true, testMode: true, devOtp: code };
-});
 
-route('POST', '/api/upload', ['customer', 'tailor', 'admin'], async ({ body }) => ({ url: await saveUpload(body.dataUrl) }));
 route('POST', '/api/auth/verify', null, ({ body, res }) => {
   const mobile = String(body.mobile || '').trim(), code = String(body.code || '').trim();
   const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
