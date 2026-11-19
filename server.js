@@ -309,26 +309,17 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   const h = (req && req.headers) || {};
   const viaProxy = !!(h['cf-connecting-ip'] || h['x-forwarded-for'] || h.forwarded);
   const role = (get('SELECT role FROM users WHERE mobile=?', mobile) || {}).role;
-  if (viaProxy && (role === 'admin' || role === 'tailor')) {
+    if (viaProxy && (role === 'admin' || role === 'tailor')) {
     console.log(`[TEST OTP] ${mobile}: ${code}`);
     return { sent: true, testMode: true, console: true };
   }
+
   return { sent: true, testMode: true, devOtp: code };
-```[span_1](start_span)[span_1](end_span)
-
-Meanwhile, in **`core.js`** (inside `D.forms['otp-request']`), we wrote `r.otp` instead of `r.devOtp`! That's why the customer's phone isn't showing the test OTP box on screen—`server.js` sends `devOtp`, while `core.js` was looking for `otp`[span_2](start_span)[span_2](end_span).
-
-### Quick 1-Line Fix in `core.js`
-Open **`core.js`** on GitHub, go down to `D.forms['otp-request']` (around **line 309**), and change `r.otp` to `r.devOtp`:
-
-```javascript
-D.auth.mobile = mobile; D.auth.step = 'otp'; D.auth.consoleOtp = r.devOtp || null; drawLogin();
-
 });
+
 route('POST', '/api/upload', ['customer', 'tailor', 'admin'], async ({ body }) => ({ url: await saveUpload(body.dataUrl) }));
 route('POST', '/api/auth/verify', null, ({ body, res }) => {
   const mobile = String(body.mobile || '').trim(), code = String(body.code || '').trim();
-  if (!MOBILE.test(mobile) || !/^\d{6}$/.test(code)) throw bad('Enter the 6-digit OTP');
   const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
   if (!o || o.expires < Date.now()) throw bad('OTP expired. Please request a new one.');
   if (o.attempts >= 5) throw new HttpError(429, 'Too many wrong attempts. Request a new OTP.');
