@@ -307,8 +307,6 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
 
   const h = (req && req.headers) || {};
   const viaProxy = !!(h['cf-connecting-ip'] || h['x-forwarded-for'] || h.forwarded);
-  const h = (req && req.headers) || {};
-  const viaProxy = !!(h['cf-connecting-ip'] || h['x-forwarded-for'] || h.forwarded);
   const role = (get('SELECT role FROM users WHERE mobile=?', mobile) || {}).role;
 
   if (viaProxy && (role === 'admin' || role === 'tailor')) {
@@ -317,7 +315,6 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   }
 
   return { sent: true, testMode: true, devOtp: code };
-
 });
 
   if (!crypto.timingSafeEqual(a, b)) { run('UPDATE otps SET attempts=attempts+1 WHERE mobile=?', mobile); throw bad('Incorrect OTP'); }
