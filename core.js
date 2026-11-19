@@ -128,11 +128,31 @@ async function shrink(file) { // downscale big photos in the browser so uploads 
   c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.85);
 }
+
 async function uploadFiles(files, max) {
   const urls = [];
-  for (const f of [...files].slice(0, max)) { if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { toast('Only PNG, JPG or WebP images are allowed', true); continue; } urls.push(await shrink(f)); }
+
+  for (const f of [...files].slice(0, max)) {
+    if (!/^image\/(png|jpeg|webp)$/.test(f.type)) {
+      throw new Error('Only PNG, JPG or WebP images are allowed');
+    }
+
+    const dataUrl = await shrink(f);
+
+    const result = await api('POST', '/api/upload', {
+      dataUrl
+    });
+
+    if (!result.url) {
+      throw new Error('Image upload failed. Please try again.');
+    }
+
+    urls.push(result.url);
+  }
+
   return urls;
 }
+
 function photoField(name, label, urls = [], max = 4) {
   return `<div class="field" data-photos="${name}" data-max="${max}"><label>${label}</label>
     <input type="hidden" name="${name}" value="${esc(JSON.stringify(urls))}">
@@ -140,12 +160,39 @@ function photoField(name, label, urls = [], max = 4) {
     <input type="file" accept="image/png,image/jpeg,image/webp" multiple data-change="photos" style="margin-top:8px">
     <div class="hint">Up to ${max} photos, PNG/JPG/WebP.</div></div>`;
 }
+
 D.changes.photos = async (el) => {
-  const box = el.closest('[data-photos]'), hid = $('input[type=hidden]', box), max = +box.dataset.max;
-  const cur = JSON.parse(hid.value || '[]'); el.disabled = true;
-  try { const add = await uploadFiles(el.files, max - cur.length); const all = cur.concat(add).slice(0, max); hid.value = JSON.stringify(all); $('.thumbs', box).innerHTML = all.map(u => `<img src="${esc(u)}" alt="">`).join(''); }
-  catch (e) { fail(e); } finally { el.disabled = false; el.value = ''; }
+  const box = el.closest('[data-photos]');
+  const hid = $('input[type=hidden]', box);
+  const max = +box.dataset.max;
+
+  const cur = JSON.parse(hid.value || '[]');
+  el.disabled = true;
+
+  try {
+    const add = await uploadFiles(
+      el.files,
+      max === 1 ? 1 : max - cur.length
+    );
+
+    const all = (
+      max === 1 ? add : cur.concat(add)
+    ).slice(0, max);
+
+    hid.value = JSON.stringify(all);
+
+    $('.thumbs', box).innerHTML = all
+      .map(u => `<img src="${esc(u)}" alt="">`)
+      .join('');
+
+  } catch (e) {
+    fail(e);
+  } finally {
+    el.disabled = false;
+    el.value = '';
+  }
 };
+
 
 // ---- garment photography ----
 const GARMENT_PHOTO = {
