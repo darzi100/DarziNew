@@ -57,19 +57,39 @@ function parseHash() {
   const h = location.hash.slice(1) || '/'; const [p, qs] = h.split('?');
   return { path: p, q: Object.fromEntries(new URLSearchParams(qs || '')) };
 }
-function view(html, after) { $('#app').innerHTML = html; window.scrollTo(0, 0); if (after) after(); }
+function view(html, after) {
+  const app = $('#app');
+  app.classList.remove('view-in');
+  void app.offsetWidth;
+  app.innerHTML = html;
+  app.classList.add('view-in');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  staggerReveal();
+  if (after) after();
+}
+function staggerReveal() {
+  $$('#app .design, #app .catcard, #app .card, #app .stat').forEach((el, i) => {
+    el.style.setProperty('--stagger', Math.min(i, 12));
+    el.classList.add('reveal-item');
+  });
+}
 async function render() {
   closeModal();
+  const app = $('#app');
+  app.classList.add('view-out');
+  await new Promise(r => setTimeout(r, 110));
+  app.classList.remove('view-out');
   const { path, q } = parseHash();
   for (const r of D.routes) {
     const m = r.re.exec(path); if (!m) continue;
     if (r.roles && (!D.me || !r.roles.includes(D.me.role))) { D.next = location.hash; return go('#/login'); }
-    view('<div class="spin">Loading…</div>');
-    try { await r.fn(m, q); } catch (e) { if (e.status === 401) { D.me = null; renderChrome(); D.next = location.hash; return go('#/login'); } view(`<div class="empty"><h2>Something went wrong</h2><p>${esc(e.message)}</p><a class="btn" href="#/">Back to home</a></div>`); }
+    view('<div class="spin"><div class="loader"></div><p class="muted small" style="margin-top:12px">Preparing atelier…</p></div>');
+    try { await r.fn(m, q); } catch (e) { if (e.status === 401) { D.me = null; renderChrome(); D.next = location.hash; return go('#/login'); } view(`<div class="empty"><h2>Something went wrong</h2><p class="muted">${esc(e.message)}</p><a class="btn" href="#/">Back home</a></div>`); }
     renderChrome(); return;
   }
   view('<div class="empty"><h2>Page not found</h2><a class="btn" href="#/">Go home</a></div>');
 }
+
 window.addEventListener('hashchange', render);
 
 // ---- delegated events ----
