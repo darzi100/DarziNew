@@ -335,4 +335,8 @@ route('/admin/content', ['admin'], async (q) => {
   // Fetch and render your content/categories management view here
   app.innerHTML = `<div class="stack"><h2>Content Management</h2><p class="muted">Content dashboard coming soon.</p></div>`;
 });
+route('/admin', ['admin'], async () => {
+  if (D.me.role !== 'admin') return go('#/login');
+  app.innerHTML = `<div class="stack"><h2>Admin Dashboard</h2><p class="muted">Welcome to the admin panel.</p></div>`;
+});
 
