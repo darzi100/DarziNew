@@ -116,7 +116,6 @@ async function shrink(file) { // downscale big photos in the browser so uploads 
   c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.85);
 }
-const GARMENT_PHOTO = {
 async function uploadFiles(files, max) {
   const urls = [];
   for (const f of [...files].slice(0, max)) { if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { toast('Only PNG, JPG or WebP images are allowed', true); continue; } urls.push(await shrink(f)); }
@@ -137,6 +136,7 @@ D.changes.photos = async (el) => {
 };
 
 // ---- garment photography ----
+// ---- garment photography ----
 const GARMENT_PHOTO = {
   shirts: 'https://images.pexels.com/photos/297933/pexels-photo-297933.jpeg?auto=compress&cs=tinysrgb&w=800',
   pants: 'https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -153,6 +153,27 @@ const catSlug = (id) => { const c = D.cfg && D.cfg.categories.find(c => c.id ===
 function pic(d) {
   const src = d.image_url || GARMENT_PHOTO[catSlug(d.category_id)] || GARMENT_PHOTO.other;
   return `<img src="${esc(src)}" alt="${esc(d.name)}" loading="lazy" onload="this.classList.add('loaded')">`;
+}
+
+// ---- measurement guides ----
+const GUIDE = {
+  neck: ['Wrap the tape around the base of your neck. Keep one finger between tape and neck.', 'M80,50 a20,14 0 1,0 40,0'],
+  chest: ['Go around the fullest part of your chest, under the arms, with the tape level across the back.', 'M62,98 L138,98'],
+  waist: ['Measure around your natural waist, the narrowest part of your torso. Do not pull the tape tight.', 'M68,134 L132,134'],
+  hip: ['Go around the fullest part of your hips and seat, keeping the tape level.', 'M64,166 L136,166'],
+  shoulder: ['Measure straight across the back from the edge of one shoulder to the other.', 'M58,76 L142,76'],
+  sleeve: ['From the tip of your shoulder to your wrist bone, with the arm slightly bent.', 'M144,78 L170,150'],
+  thigh: ['Around the fullest part of your upper thigh.', 'M64,198 L98,198'],
+  inseam: ['From the crotch down the inside of the leg to the ankle.', 'M100,178 L100,300'],
+  'pant length': ['From the waist along the outside of the leg to the ankle.', 'M70,134 L70,304'],
+  bottom: ['The width you want around the trouser bottom (hem).', 'M62,300 L96,300'],
+  length: ['From the high point of the shoulder next to the neck down to where you want the garment to end.', 'M100,58 L100,210'],
+  depth: ['From the shoulder seam straight down to where the neckline should end.', 'M100,60 L100,96']
+};
+function guideFor(field) {
+  const f = field.toLowerCase();
+  const key = f.includes('bottom') ? 'bottom' : f.includes('pant') ? 'pant length' : f.includes('depth') ? 'depth' : Object.keys(GUIDE).find(k => f.includes(k));
+  return GUIDE[key] || ['Measure snugly, but not tight, and note it in inches.', 'M62,98 L138,98'];
 }
 function guideCard(field) {
   const [text, d] = guideFor(field);
@@ -241,55 +262,71 @@ function renderChrome() {
   if (me && me.role === 'admin') links = `<a class="${on('/admin')}" href="#/admin">${t('admin')}</a>`;
   $('#header').innerHTML = `<a class="brand" href="#/" aria-label="${esc(D.cfg.brand)} home">${esc(D.cfg.brand)}<small>Custom tailoring</small></a>
     <nav class="nav" aria-label="Primary">${links}
-    ${me ? `<a class="bell" href="#/notifications" aria-label="Notifications">${ICON.bell}${me.unread ? `<b>${me.unread}</b>` : ''}</a><button class="link hide-m" data-act="logout">${t('logout')}</button>` : `<a class="btn sm" href="#/login">${t('login')}</a>`}</nav>`;
-  $('#footer').innerHTML = `<div class="row between"><div><b>${esc(D.cfg.brand)}</b> · ${t('tagline')}<br>Serving ${esc(D.cfg.hub.name)} and nearby areas of Delhi.</div>
-    <div class="small">${!me ? '<a href="#/login?role=tailor">Join as a tailor</a><br>' : ''}${me ? '<a href="#" data-act="logout">Log out</a>' : ''}</div></div>`;
-  const tb = (!me || me.role === 'customer') ? [['/', ICON.home, t('home')], ['/designs', ICON.grid, t('designs')], ['/orders', ICON.bag, t('orders')], ['/profile', ICON.user, t('profile')]]
-    : me.role === 'tailor' ? [['/tailor', ICON.grid, t('dashboard')], ['/notifications', ICON.bell, 'Alerts']] : [['/admin', ICON.grid, t('admin')], ['/notifications', ICON.bell, 'Alerts']];
-  $('#tabbar').innerHTML = tb.map(([p, i, l]) => `<a href="#${p}" class="${p === '/' ? (path === '/' ? 'on' : '') : on(p)}">${i}${l}</a>`).join('');
+    ${me ? `<a class="bell" href="#/notifications" aria-label="Notifications">${ICON.bell}${me.unread ? `<b>${me.unread}</b>` : ''}</a><button class="link" data-act="logout">${t('logout')}</button>` : `<a class="btn sm" href="#/login">${t('login')}</a>`}</nav></div>`;
+  const ft = $('#footer'); if (ft) ft.innerHTML = `<div class="wrap"><div class="row between"><div><b>${esc(D.cfg.brand)}</b> · ${esc(D.cfg.tagline)}</div><div class="muted small">Serving ${esc(D.cfg.hub.name)}</div></div></div>`;
+  const tb = $('#tabbar'); if (tb) {
+    const items = !me || me.role === 'customer' ? [
+      ['/', t('home'), ICON.home],
+      ['/designs', t('designs'), ICON.grid],
+      ['/orders', t('orders'), ICON.bag],
+      ['/profile', t('profile'), ICON.user]
+    ] : me.role === 'tailor' ? [
+      ['/tailor', t('dashboard'), ICON.grid],
+      ['/profile', t('profile'), ICON.user]
+    ] : [
+      ['/admin', t('admin'), ICON.grid],
+      ['/profile', t('profile'), ICON.user]
+    ];
+    tb.innerHTML = items.map(([p, l, icon]) => `<a href="#${p}" class="${on(p)}">${icon}${l}</a>`).join('');
+  }
 }
-D.actions.logout = async () => { await guard(() => api('POST', '/api/logout')); D.me = null; go('#/'); toast('You have been logged out'); };
+D.actions.logout = async () => { await guard(() => api('POST', '/api/logout')); D.me = null; render(); toast('Logged out'); };
 
 // ---- auth ----
 route('/login', async (m, q) => {
-  if (D.me) return go(D.me.role === 'tailor' ? '#/tailor' : D.me.role === 'admin' ? '#/admin' : '#/');
-  D.auth = { intent: q.role === 'tailor' ? 'tailor' : 'customer', step: 'mobile' }; drawLogin();
+  if (D.me) return go(D.me.role === 'tailor' ? '/tailor' : D.me.role === 'admin' ? '/admin' : '/');
+  D.auth = { intent: q.role === 'tailor' ? 'tailor' : 'customer', step: 'mobile', needsName: false };
+  drawLogin();
 });
-function drawLogin(extra = {}) {
+function drawLogin(extra = '') {
   const a = D.auth, tailor = a.intent === 'tailor';
-  view(`<div class="login card stack"><div><div class="eyebrow">${tailor ? 'For tailors' : 'Welcome'}</div><h2>${tailor ? 'Join as a tailor' : 'Log in or sign up'}</h2>
-    <p class="muted">${a.step === 'mobile' ? 'Enter your mobile number. We will send a 6-digit OTP.' : `Enter the OTP sent to +91 ${esc(a.mobile)}.`}</p></div>
-    ${a.step === 'mobile' ? `<form data-form="otp-request" class="stack"><div class="field"><label for="mob">Mobile number</label><div class="row" style="flex-wrap:nowrap"><span class="tag" style="padding:12px">+91</span><input id="mob" name="mobile" inputmode="numeric" maxlength="10" autocomplete="tel-national" required placeholder="98XXXXXXXX" value="${esc(a.mobile || '')}"></div></div>
-      <button class="btn block">Send OTP</button></form>` : `
-      ${a.consoleOtp ? `<div class="banner"><b>TEST MODE.</b> The OTP for this account is shown in the server window on the computer that runs Darzi.</div>` : ''}
-      ${a.devOtp ? `<div class="banner"><b>TEST MODE.</b> No SMS is sent in this build. Your OTP is <span class="otpbox">${esc(a.devOtp)}</span></div>` : ''}
-      <form data-form="otp-verify" class="stack"><div class="field"><label for="otp">OTP</label><input id="otp" name="code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required placeholder="6-digit code"></div>
-      ${a.needsName ? `<div class="banner info">New here? Tell us your name to create your account.</div><div class="field"><label>Full name</label><input name="name" required minlength="2" maxlength="60" autocomplete="name"></div><div class="field"><label>Email (optional)</label><input name="email" type="email" autocomplete="email"></div>` : ''}
-      <button class="btn block">${a.needsName ? 'Create account' : 'Verify and continue'}</button>
-      <button type="button" class="btn ghost block" data-act="otp-change">Use a different number</button></form>`}
-    <p class="small muted center">${tailor ? 'Already a customer? <a href="#/login">Customer login</a>' : 'Are you a tailor? <a href="#/login?role=tailor">Join as a tailor</a>'}</p></div>`,
-    () => { const i = $('input'); if (i) i.focus(); });
+  view(`<div class="login card stack"><div class="eyebrow">${tailor ? 'For tailors' : 'Welcome'}</div><h2>${tailor ? 'Tailor portal' : t('login')}</h2>
+    <p class="muted">${tailor ? 'Sign in with your registered mobile number to manage orders and payouts.' : t('hero_p')}</p>
+    <div class="steps3" style="display:none"></div>
+    <form data-form="otp-request" class="stack"><div class="field"><label>Mobile number</label><div class="row" style="gap:6px"><input style="width:72px;background:var(--cream-2);text-align:center;font-weight:600" value="+91" disabled><input name="mobile" inputmode="tel" required maxlength="10" placeholder="98765 43210" value="${esc(a.mobile || '')}"></div></div>
+    <button class="btn block">Continue</button></form>
+    ${a.consoleOtp ? `<div class="banner"><b>TEST MODE</b>: The OTP for this account is shown in the server window or logs:<br><b class="otpbox" style="margin-top:6px">${esc(a.consoleOtp)}</b></div>` : ''}
+    <form data-form="otp-verify" class="stack" style="display:${a.step === 'otp' ? 'block' : 'none'}">
+    <div class="field"><label>Enter 6-digit OTP</label><input name="code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456" style="letter-spacing:.2em;font-weight:600"></div>
+    ${a.needsName ? `<div class="banner info">New here? Tell us your name to create your account.</div><div class="field"><label>Your full name</label><input name="name" maxlength="50" placeholder="e.g. Priya Sharma" required></div>` : ''}
+    <button class="btn block">Verify and continue</button>
+    <button type="button" class="btn ghost block" data-act="otp-change" style="margin-top:8px">Use a different number</button></form>
+    <p class="small muted center" style="margin-top:14px">${tailor ? 'Are you a customer? <a href="#/login">Customer login</a>' : 'Are you a tailor? <a href="#/login?role=tailor">Tailor login</a>'}</p>
+    ${extra}</div>`);
 }
 D.forms['otp-request'] = async (f) => {
   const mobile = f.mobile.value.trim(), b = $('button', f); busy(b, true);
-  try { const r = await api('POST', '/api/auth/request-otp', { mobile }); D.auth.mobile = mobile; D.auth.step = 'otp'; D.auth.devOtp = r.testMode ? r.devOtp : null; D.auth.consoleOtp = !!r.console; drawLogin(); }
-  catch (e) { toast(e.message, true); busy(b, false); }
+  try {
+    const r = await api('POST', '/api/auth/request-otp', { mobile });
+    D.auth.mobile = mobile; D.auth.step = 'otp'; D.auth.consoleOtp = r.otp || null; drawLogin();
+  } catch (e) { toast(e.message, true); busy(b, false); }
 };
-D.actions['otp-change'] = () => { D.auth.step = 'mobile'; D.auth.needsName = false; drawLogin(); };
+D.actions['otp-change'] = () => { D.auth.step = 'mobile'; D.auth.needsName = false; D.auth.consoleOtp = null; drawLogin(); };
 D.forms['otp-verify'] = async (f) => {
   const b = $('button', f); busy(b, true);
   try {
-    const d = formData(f); const r = await api('POST', '/api/auth/verify', { mobile: D.auth.mobile, code: d.code, name: d.name, email: d.email, intent: D.auth.intent });
+    const d = formData(f); const r = await api('POST', '/api/auth/verify', { mobile: D.auth.mobile, code: d.code, name: d.name });
     if (r.needsName) { D.auth.needsName = true; busy(b, false); return drawLogin(); }
-    D.me = r; const next = D.next; D.next = null; toast(`Welcome, ${r.name.split(' ')[0]}`);
-    go(next || (r.role === 'tailor' ? '#/tailor' : r.role === 'admin' ? '#/admin' : '#/'));
+    const next = D.next; D.next = null; toast(`Welcome, ${r.name.split(' ')[0]}`);
+    go(next || (r.role === 'tailor' ? '/tailor' : r.role === 'admin' ? '/admin' : '/'));
   } catch (e) { toast(e.message, true); busy(b, false); }
 };
 
 // ---- notifications (all roles) ----
 route('/notifications', async () => {
-  const list = await api('GET', '/api/notifications'); await api('POST', '/api/notifications/read'); D.me.unread = 0;
-  const link = (n) => n.order_id ? (D.me.role === 'admin' ? `#/admin/orders/${n.order_id}` : D.me.role === 'tailor' ? '#/tailor' : `#/orders/${n.order_id}`) : null;
-  view(`<h2>Notifications</h2>${list.length ? `<div class="stack">${list.map(n => `<div class="card ${n.read ? 'flat' : ''}"><div class="row between"><div>${link(n) ? `<a href="${link(n)}">${esc(n.text)}</a>` : esc(n.text)}</div><span class="small muted">${ftime(n.ts)}</span></div></div>`).join('')}</div>` : '<div class="empty">Nothing here yet. Order updates will appear here.</div>'}`);
-}, ['customer', 'tailor', 'admin']);
-const payLabel = (s) => (s === 'cod' ? 'pay on delivery' : s);
+  if (!D.me) return go('#/login');
+  await api('POST', '/api/notifications/read'); D.me.unread = 0; renderChrome();
+  const list = await api('GET', '/api/notifications');
+  const link = (n) => n.order_id ? (D.me.role === 'admin' ? `#/admin/orders/${n.order_id}` : D.me.role === 'tailor' ? `#/tailor` : `#/orders/${n.order_id}`) : '#/';
+  view(`<h2>Notifications</h2>${list.length ? `<div class="cols"><div class="stack">${list.map(n => `<a class="card ${n.read ? 'flat' : ''}" href="${link(n)}" style="display:block;text-decoration:none;color:inherit"><div class="row between"><b>${esc(n.text)}</b><span class="muted small">${ftime(n.ts)}</span></div></a>`).join('')}</div></div>` : '<div class="empty">No notifications yet.</div>'}`);
+});
