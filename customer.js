@@ -32,8 +32,8 @@ route('/', async () => {
     <div class="grid g3"><a class="catcard" href="#/designs?g=men">${garment('shirts', '#c9d6df')}<b>${t('mens')}</b></a><a class="catcard" href="#/designs?g=women">${garment('blouses', '#c98f8a')}<b>${t('womens')}</b></a>
     ${cats.map(c => `<a class="catcard" href="#/designs?cat=${c.id}">${garment(c.slug, '#d9cdb4')}<b>${esc(c.name)}</b></a>`).join('')}</div>
     ${popular.length ? `<p class="small muted" style="margin-top:12px">Popular right now: ${popular.map(c => `<a href="#/designs?cat=${c.id}">${esc(c.name)}</a>`).join(', ')}</p>` : ''}</section>
-  <section class="block"><div class="row between"><h2>${t('featured')}</h2><a href="#/designs">See all designs</a></div><div class="grid g3" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">${feat.map(d => designCard(d, favs)).join('')}</div></section>
-  <section class="block"><h2>${t('services')}</h2><div class="grid g2">
+  
+    <section class="block"><h2>${t('services')}</h2><div class="grid g2">
     <div class="card"><h3>Custom stitching</h3><p class="muted">Choose from our design gallery or upload a photo of what you want. Local tailors stitch it to your size.</p></div>
     <div class="card"><h3>Home measurement</h3><p class="muted">Not sure how to measure? Book a visit for ${inr(D.cfg.fees.home_fee)} and we will take your measurements at home.</p></div>
     <div class="card"><h3>Fabric and pickup</h3><p class="muted">Pick fabric from us, or hand over your own. We collect it from your door.</p></div>
@@ -41,10 +41,8 @@ route('/', async () => {
   <section class="block"><h2>${t('how')}</h2><div class="grid g2 steps3">
     <div class="card"><h3>Choose</h3><p class="muted">Pick a design, fabric and colour.</p></div><div class="card"><h3>Share your size</h3><p class="muted">Enter measurements, pick a standard size, or book a home visit.</p></div>
     <div class="card"><h3>We stitch</h3><p class="muted">A verified tailor makes it. You track every step.</p></div><div class="card"><h3>Delivered</h3><p class="muted">Receive it at home and rate your tailor.</p></div></div></section>`);
-    <div class="card"><h3>Custom stitching</h3><p class="muted">Choose from our design gallery or upload a photo of what you want. Local tailors stitch it to your size.</p></div>
-    <div class="card"><h3>Home measurement</h3><p class="muted">Not sure how to measure? Book a visit for ${inr(D.cfg.fees.home_fee)} and we will take your measurements at home.</p></div>
-    <div class="card"><h3>Fabric and pickup</h3><p class="muted">Pick fabric from us, or hand over your own. We collect it from your door.</p></div>
-    <div class="card"><h3>Doorstep delivery</h3><p class="muted">Delivery from ${inr(D.cfg.fees.delivery_base)}, shown up front. No hidden charges.</p></div></div></section>
+});
+<div class="card"><h3>Doorstep delivery</h3><p class="muted">Delivery from ${inr(D.cfg.fees.delivery_base)}, shown up front. No hidden charges.</p></div></div></section>
   <section class="block"><h2>${t('how')}</h2><div class="grid g2 steps3">
     <div class="card"><h3>Choose</h3><p class="muted">Pick a design, fabric and colour.</p></div><div class="card"><h3>Share your size</h3><p class="muted">Enter measurements, pick a standard size, or book a home visit.</p></div>
     <div class="card"><h3>We stitch</h3><p class="muted">A verified tailor makes it. You track every step.</p></div><div class="card"><h3>Delivered</h3><p class="muted">Receive it at home and rate your tailor.</p></div></div></section>`);
