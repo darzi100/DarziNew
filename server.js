@@ -910,7 +910,7 @@ route('POST', '/api/admin/designs', A, ({ body }) => {
   const image_url = body.image_url ? String(body.image_url).trim() : null;
   const featured = body.featured ? 1 : 0;
   const active = body.active !== false ? 1 : 0;
-  const photos = JSON.stringify(photolist(body.photos, 4));
+  const photos = JSON.stringify(photoList(body.photos, 4));
 
   const id = Number(run(
     'INSERT INTO designs(name, category_id, gender, price, description, image_url, featured, active, photos) VALUES(?,?,?,?,?,?,?,?,?)',
@@ -933,7 +933,7 @@ route('PUT', '/api/admin/designs/:id', A, ({ params, body }) => {
   const image_url = body.image_url ? String(body.image_url).trim() : null;
   const featured = body.featured ? 1 : 0;
   const active = body.active !== false ? 1 : 0;
-  const photos = JSON.stringify(photolist(body.photos, 4));
+  const photos = JSON.stringify(photoList(body.photos, 4));
 
   run(
     'UPDATE designs SET name=?, category_id=?, gender=?, price=?, description=?, image_url=?, featured=?, active=?, photos=? WHERE id=?',
