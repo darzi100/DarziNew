@@ -116,22 +116,23 @@ async function shrink(file) { // downscale big photos in the browser so uploads 
   c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.85);
 }
-async function uploadFiles(files, max) {
-  const urls = [];
-  for (const f of [...files].slice(0, max)) { if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { toast('Only PNG, JPG or WebP images', true); continue; } urls.push((await api('POST', '/api/upload', { dataUrl: await shrink(f) })).url); }
-  return urls;
+const GARMENT_PHOTO = {
+  shirts: 'https://images.pexels.com/photos/297933/pexels-photo-297933.jpeg?auto=compress&cs=tinysrgb&w=800',
+  pants: 'https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=800',
+  kurtas: 'https://images.pexels.com/photos/2065195/pexels-photo-2065195.jpeg?auto=compress&cs=tinysrgb&w=800',
+  suits: 'https://images.pexels.com/photos/325876/pexels-photo-325876.jpeg?auto=compress&cs=tinysrgb&w=800',
+  blouses: 'https://images.pexels.com/photos/6311392/pexels-photo-6311392.jpeg?auto=compress&cs=tinysrgb&w=800',
+  other: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=800'
+};
+function garment(slug, color, cls = '') {
+  const src = GARMENT_PHOTO[slug] || GARMENT_PHOTO.other;
+  return `<div class="garment-thumb ${cls}" style="--tint:${esc(color || '#e9e0cc')}"><img src="${src}" alt="${esc(slug)}" loading="lazy"></div>`;
 }
-// Photo picker widget. Holds urls in a hidden JSON input named `name`.
-function photoField(name, label, urls = [], max = 4) {
-  return `<div class="field" data-photos="${name}" data-max="${max}"><label>${label}</label>
-    <input type="hidden" name="${name}" value='${esc(JSON.stringify(urls))}'>
-    <div class="thumbs">${urls.map(u => `<img src="${u}" alt="">`).join('')}</div>
-    <input type="file" accept="image/png,image/jpeg,image/webp" multiple data-change="photos" style="margin-top:8px">
-    <div class="hint">Up to ${max} photos, PNG/JPG/WebP.</div></div>`;
+const catSlug = (id) => { const c = D.cfg && D.cfg.categories.find(c => c.id === id); return c ? c.slug : 'other'; };
+function pic(d) {
+  const src = d.image_url || GARMENT_PHOTO[catSlug(d.category_id)] || GARMENT_PHOTO.other;
+  return `<img src="${esc(src)}" alt="${esc(d.name)}" loading="lazy" onload="this.classList.add('loaded')">`;
 }
-D.changes.photos = async (el) => {
-  const box = el.closest('[data-photos]'), hid = $('input[type=hidden]', box), max = +box.dataset.max;
-  const cur = JSON.parse(hid.value || '[]'); el.disabled = true;
   try { const add = await uploadFiles(el.files, max - cur.length); const all = cur.concat(add).slice(0, max); hid.value = JSON.stringify(all); $('.thumbs', box).innerHTML = all.map(u => `<img src="${u}" alt="">`).join(''); }
   catch (e) { fail(e); } finally { el.disabled = false; el.value = ''; }
 };
