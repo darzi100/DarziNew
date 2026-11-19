@@ -51,7 +51,19 @@ function closeModal() { const m = $('#modal'); if (m) m.remove(); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 // ---- router ----
-const route = (re, fn, roles) => D.routes.push({ re: new RegExp('^' + re + '$'), fn, roles });
+const route = (re, fn, roles) => {
+  const allowedRoles = roles == null
+    ? null
+    : Array.isArray(roles)
+      ? roles
+      : [roles];
+
+  D.routes.push({
+    re: new RegExp('^' + re + '$'),
+    fn,
+    roles: allowedRoles
+  });
+};
 function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
 function parseHash() {
   const h = location.hash.slice(1) || '/'; const [p, qs] = h.split('?');
@@ -332,10 +344,10 @@ route('/notifications', async () => {
 
 route('/admin/content', async () => {
   if (D.me.role !== 'admin') return go('#/login');
-  app.innerHTML = `<div class="stack"><h2>Content Management</h2><p class="muted">Content dashboard coming soon.</p></div>`;
+  view(`<div class="stack"><h2>Content Management</h2><p class="muted">Content dashboard coming soon.</p></div>`);
 }, ['admin']);
 
 route('/admin', async () => {
   if (D.me.role !== 'admin') return go('#/login');
-  app.innerHTML = `<div class="stack"><h2>Admin Dashboard</h2><p class="muted">Welcome to the admin panel.</p></div>`;
+  view(`<div class="stack"><h2>Admin Dashboard</h2><p class="muted">Welcome to the admin panel.</p></div>`);
 }, ['admin']);
