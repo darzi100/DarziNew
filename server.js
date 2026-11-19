@@ -183,17 +183,38 @@ function saveUpload(dataUrl) {
 
 // ---------- auth ----------
 const hashOtp = (mobile, code) => crypto.createHmac('sha256', SECRET).update(mobile + ':' + code).digest('hex');
+function signTok(payload) {
+  const b = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', SECRET).update(b).digest('base64url');
+  return `${b}.${sig}`;
+}
+function verifyTok(tok) {
+  const [b, sig] = String(tok || '').split('.');
+  if (!b || !sig) return null;
+  const expSig = crypto.createHmac('sha256', SECRET).update(b).digest('base64url');
+  if (sig !== expSig) return null;
+  const data = P(Buffer.from(b, 'base64url').toString(), null);
+  return data && data.exp > Date.now() ? data : null;
+}
 function startSession(res, userId) {
-  const token = crypto.randomBytes(32).toString('hex');
-  run('INSERT INTO sessions(token,user_id,expires) VALUES(?,?,?)', token, userId, Date.now() + 30 * 864e5);
+  const u = get('SELECT mobile FROM users WHERE id=?', userId);
+  const token = signTok({ uid: userId, m: u.mobile, exp: Date.now() + 30 * 864e5 });
   res.setHeader('Set-Cookie', `sid=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${30 * 86400}${PROD ? '; Secure' : ''}`);
 }
 function sessionUser(req) {
-  const m = /(?:^|;\s*)sid=([a-f0-9]{64})/.exec(req.headers.cookie || '');
+  const m = /(?:^|;\s*)sid=([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)/.exec(req.headers.cookie || '');
   if (!m) return null;
-  const s = get('SELECT * FROM sessions WHERE token=?', m[1]);
-  if (!s || s.expires < Date.now()) return null;
-  const u = get('SELECT id,name,mobile,email,role,status FROM users WHERE id=?', s.user_id);
+  const data = verifyTok(m[1]);
+  if (!data) return null;
+  let u = get('SELECT id,name,mobile,email,role,status FROM users WHERE mobile=?', data.m);
+  if (!u && data.m) {
+    // Recreate admin automatically if Render wiped the free SQLite DB on restart
+    const admins = (process.env.ADMIN_MOBILE || '').split(',').map(s => s.trim());
+    if (admins.includes(data.m)) {
+      const id = Number(run('INSERT INTO users(name,mobile,role) VALUES(?,?,?)', 'Admin', data.m, 'admin').lastInsertRowid);
+      u = get('SELECT id,name,mobile,email,role,status FROM users WHERE id=?', id);
+    }
+  }
   if (!u || u.status === 'suspended') return null;
   u.token = m[1]; return u;
 }
