@@ -1043,5 +1043,13 @@ const server = http.createServer(async (req, res) => {
   }
 });
 setInterval(() => { run('DELETE FROM sessions WHERE expires<?', Date.now()); run('DELETE FROM otps WHERE expires<?', Date.now()); run('DELETE FROM otp_log WHERE ts<?', Date.now() - 3600e3); }, 3600e3).unref();
+try {
+  db.exec('ALTER TABLE designs ADD COLUMN photos TEXT;');
+} catch (e) {}
+
+try {
+  db.exec('ALTER TABLE fabrics ADD COLUMN photos TEXT;');
+} catch (e) {}
+
 if (require.main === module) server.listen(PORT, () => console.log(`Darzi running on http://localhost:${PORT}  (OTP: ${OTP_MODE}, payments: ${PAYMENT_MODE})`));
 module.exports = server;
