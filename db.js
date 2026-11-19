@@ -171,4 +171,5 @@ seedDemo();
     else if (u.role !== 'admin') db.prepare("UPDATE users SET role='admin' WHERE id=?").run(u.id);
   }
 })();
+module.exports = { db, DATA_DIR, DEFAULT_SETTINGS };
 
