@@ -304,6 +304,9 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
     return { sent: true, testMode: false };
   }
 
+  run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
+  run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
+
   const h = req && req.headers ? req.headers : {};
   const viaProxy = !!(h['cf-connecting-ip'] || h['x-forwarded-for'] || h.forwarded);
   const roleRecord = get('SELECT role FROM users WHERE mobile=?', mobile);
@@ -315,6 +318,9 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   }
 
   return { sent: true, testMode: true, devOtp: code };
+});
+
+route('POST', '/api/upload', ['customer', 'tailor', 'admin'], async ({ body }) => ({ url: await saveUpload(body.dataUrl) }));
 
 route('POST', '/api/auth/verify', null, ({ body, res }) => {
   const mobile = String(body.mobile || '').trim();
