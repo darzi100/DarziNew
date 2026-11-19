@@ -843,7 +843,7 @@ route('GET', '/api/admin/finance', A, () => {
       UNION ALL SELECT ts,'payout',amount,'manual','paid',note,NULL FROM payouts ORDER BY ts DESC LIMIT 100`)
   };
 });
-route('POST', '/api/admin/payouts', A, ({ body }) => 
+route('POST', '/api/admin/payouts', A, ({ body }) => {
   const tid = idp(body.tailor_id), amount = Math.round(num(body.amount, 1, 1e7, 'Amount'));
   if (!get("SELECT 1 x FROM tailors WHERE user_id=?", tid)) throw bad('Unknown tailor');
   const earned = get("SELECT COALESCE(SUM(tailor_payable),0) s FROM orders WHERE tailor_id=? AND status='Delivered'", tid).s;
