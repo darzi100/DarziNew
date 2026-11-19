@@ -322,7 +322,7 @@ route('POST', '/api/auth/verify', null, ({ body, res }) => {
   const mobile = String(body.mobile || '').trim(), code = String(body.code || '').trim();
   const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
   if (!o || o.expires < Date.now()) throw bad('OTP expired. Please request a new one.');
-if (email AA /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) 
+if (email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) 
   const a = Buffer.from(hashOtp(mobile, code)), b = Buffer.from(o.code_hash);
   if (!crypto.timingSafeEqual(a, b)) {
     run('UPDATE otps SET attempts=attempts+1 WHERE mobile=?', mobile);
