@@ -330,13 +330,12 @@ route('/notifications', async () => {
   view(`<h2>Notifications</h2>${list.length ? `<div class="cols"><div class="stack">${list.map(n => `<a class="card ${n.read ? 'flat' : ''}" href="${link(n)}" style="display:block;text-decoration:none;color:inherit"><div class="row between"><b>${esc(n.text)}</b><span class="muted small">${ftime(n.ts)}</span></div></a>`).join('')}</div></div>` : '<div class="empty">No notifications yet.</div>'}`);
 });
 
-route('/admin/content', ['admin'], async (q) => {
+route('/admin/content', async () => {
   if (D.me.role !== 'admin') return go('#/login');
-  // Fetch and render your content/categories management view here
   app.innerHTML = `<div class="stack"><h2>Content Management</h2><p class="muted">Content dashboard coming soon.</p></div>`;
-});
-route('/admin', ['admin'], async () => {
+}, ['admin']);
+
+route('/admin', async () => {
   if (D.me.role !== 'admin') return go('#/login');
   app.innerHTML = `<div class="stack"><h2>Admin Dashboard</h2><p class="muted">Welcome to the admin panel.</p></div>`;
-});
-
+}, ['admin']);
