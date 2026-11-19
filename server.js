@@ -901,6 +901,48 @@ route('POST', '/api/admin/payouts', A, ({ body }) => {
 });
 // content management
 // Admin content: designs
+route('POST', '/api/admin/designs', A, ({ body }) => {
+  const name = str(body.name || 'Design', 2, 100, 'Name');
+  const category_id = idp(body.category_id);
+  const gender = ['unisex', 'men', 'women'].includes(body.gender) ? body.gender : 'unisex';
+  const price = num(body.price, 0, 1000000, 'Price');
+  const description = optStr(body.description, 1000, 'Description');
+  const image_url = body.image_url ? String(body.image_url).trim() : null;
+  const featured = body.featured ? 1 : 0;
+  const active = body.active !== false ? 1 : 0;
+  const photos = JSON.stringify(photolist(body.photos, 4));
+
+  const id = Number(run(
+    'INSERT INTO designs(name, category_id, gender, price, description, image_url, featured, active, photos) VALUES(?,?,?,?,?,?,?,?,?)',
+    name, category_id, gender, price, description, image_url, featured, active, photos
+  ).lastInsertRowid);
+
+  return get('SELECT d.*, c.name AS category FROM designs d JOIN categories c ON c.id = d.category_id WHERE d.id=?', id);
+});
+
+route('PUT', '/api/admin/designs/:id', A, ({ params, body }) => {
+  const id = idp(params.id);
+  const existing = get('SELECT id FROM designs WHERE id=?', id);
+  if (!existing) throw new HttpError(404, 'Design not found');
+
+  const name = str(body.name || 'Design', 2, 100, 'Name');
+  const category_id = idp(body.category_id);
+  const gender = ['unisex', 'men', 'women'].includes(body.gender) ? body.gender : 'unisex';
+  const price = num(body.price, 0, 1000000, 'Price');
+  const description = optStr(body.description, 1000, 'Description');
+  const image_url = body.image_url ? String(body.image_url).trim() : null;
+  const featured = body.featured ? 1 : 0;
+  const active = body.active !== false ? 1 : 0;
+  const photos = JSON.stringify(photolist(body.photos, 4));
+
+  run(
+    'UPDATE designs SET name=?, category_id=?, gender=?, price=?, description=?, image_url=?, featured=?, active=?, photos=? WHERE id=?',
+    name, category_id, gender, price, description, image_url, featured, active, photos, id
+  );
+
+  return get('SELECT d.*, c.name AS category FROM designs d JOIN categories c ON c.id = d.category_id WHERE d.id=?', id);
+});
+
 route('GET', '/api/admin/designs', A, () =>
   all(`SELECT d.*, c.name category
        FROM designs d
