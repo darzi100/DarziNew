@@ -254,28 +254,67 @@ function timeline(o) {
   }).join('')}</ol>`;
 }
 function payPanel(o) {
-  return `<div class="card stack" id="pay"><div class="banner"><b>TEST PAYMENT MODE.</b> No real money is charged. In production this connects to Razorpay.</div>
-    <h3>Pay ${inr(o.price.total)}</h3>
-    <form data-form="pay" data-id="${o.id}" class="stack"><div class="grid g2"><label class="pick on" data-act="pay-method" data-m="upi"><input type="radio" name="method" value="upi" checked hidden><b>UPI</b><span class="small muted">GPay, PhonePe, Paytm…</span></label>
-    <label class="pick" data-act="pay-method" data-m="online"><input type="radio" name="method" value="online" hidden><b>Card / Netbanking</b><span class="small muted">Handled securely by the gateway</span></label></div>
-    <div class="field" id="upi-f"><label>UPI ID</label><input name="upi_id" placeholder="name@bank" autocomplete="off"></div>
-    <button class="btn block">Pay ${inr(o.price.total)} (test)</button><p class="hint">Card details are never stored on our servers.</p></form>
-    <hr><h3>Or pay on delivery</h3><p class="small muted">We confirm your order now and the tailor can start. You pay ${inr(o.price.total)} by UPI or cash when your clothes are delivered.</p>
-    <button class="btn ghost block" data-act="pay-later" data-id="${o.id}">Pay on delivery</button></div>`;
+  return `<div class="card stack" id="pay">
+    <h3 style="margin:0">Pay ${inr(o.price.total)}</h3>
+    <p class="hint" style="margin:0">Pay securely via UPI, Cards, Netbanking or Wallets using Razorpay.</p>
+    <button type="button" class="btn block" data-act="rzp-pay" data-id="${o.id}">Pay ${inr(o.price.total)} Online</button>
+    <hr>
+    <h3>Or pay on delivery</h3>
+    <p class="small muted">We confirm your order now and the tailor can start. You pay ${inr(o.price.total)} by UPI or cash when your order is delivered.</p>
+    <button type="button" class="btn ghost block" data-act="pay-later" data-id="${o.id}">Pay on delivery</button>
+  </div>`;
 }
-D.actions['pay-method'] = (el) => {
-  $$('[data-act=pay-method]').forEach(b => { b.classList.toggle('on', b === el); $('input', b).checked = b === el; });
-  $('#upi-f').style.display = el.dataset.m === 'upi' ? '' : 'none';
-};
 D.actions['pay-later'] = async (el) => {
   busy(el, true);
-  try { const o = await api('POST', `/api/orders/${el.dataset.id}/pay-later`, {}); toast('Order confirmed. You will pay on delivery.'); go('#/orders/' + o.id); }
-  catch (e) { toast(e.message, true); busy(el, false); }
+  try {
+    const o = await api('POST', `/api/orders/${el.dataset.id}/pay-later`, {});
+    toast('Order confirmed. You will pay on delivery.');
+    drawOrder(o, D.cfg);
+  } catch (e) {
+    toast(e.message, true);
+    busy(el, false);
+  }
 };
-D.forms.pay = async (f) => {
-  const b = $('button.btn', f); busy(b, true);
-  try { const d = formData(f); const o = await api('POST', `/api/orders/${f.dataset.id}/pay`, { method: d.method, upi_id: d.upi_id }); toast('Payment received. Your order is confirmed.'); go('#/orders/' + o.id); }
-  catch (e) { toast(e.message, true); busy(b, false); }
+D.actions['rzp-pay'] = async (el) => {
+  const id = el.dataset.id;
+  busy(el, true);
+  try {
+    if (!window.Razorpay) throw new Error('Razorpay checkout failed to load. Please refresh and try again.');
+    const cfg = await api('POST', `/api/orders/${id}/razorpay-order`, {});
+    const rzp = new window.Razorpay({
+      key: cfg.key,
+      amount: cfg.amount,
+      currency: cfg.currency,
+      name: 'Darzi',
+      description: `Order ${cfg.code}`,
+      order_id: cfg.order_id,
+      prefill: cfg.customer,
+      theme: { color: '#111111' },
+      handler: async (resp) => {
+        try {
+          const updated = await api('POST', `/api/orders/${id}/razorpay-verify`, resp);
+          toast('Payment received! Order confirmed.');
+          drawOrder(updated, D.cfg);
+        } catch (err) {
+          toast(err.message || 'Payment verification failed', true);
+          busy(el, false);
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          busy(el, false);
+        }
+      }
+    });
+    rzp.on('payment.failed', (resp) => {
+      toast((resp.error && resp.error.description) || 'Payment failed. Please try again.', true);
+      busy(el, false);
+    });
+    rzp.open();
+  } catch (e) {
+    toast(e.message, true);
+    busy(el, false);
+  }
 };
 function drawOrder(o, q) {
   const unpaid = o.status === 'Awaiting Payment', p = o.price, a = o.address;
