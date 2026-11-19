@@ -317,17 +317,18 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   return { sent: true, testMode: true, devOtp: code };
 
 route('POST', '/api/auth/verify', null, ({ body, res }) => {
-  const mobile = String(body.mobile || '').trim(), code = String(body.code || '').trim();
+route('POST', '/api/auth/verify', null, ({ body, res }) => {
+  const mobile = String(body.mobile || '').trim();
+  const code = String(body.code || '').trim();
   const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
   if (!o || o.expires < Date.now()) throw bad('OTP expired. Please request a new one.');
-if (email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) 
-  const a = Buffer.from(hashOtp(mobile, code)), b = Buffer.from(o.code_hash);
+  if (o.attempts >= 5) throw new HttpError(429, 'Too many wrong attempts. Request a new OTP.');
+  const a = Buffer.from(hashOtp(mobile, code));
+  const b = Buffer.from(o.code_hash);
   if (!crypto.timingSafeEqual(a, b)) {
     run('UPDATE otps SET attempts=attempts+1 WHERE mobile=?', mobile);
     throw bad('Incorrect OTP');
   }
-  let user = get('SELECT * FROM users WHERE mobile=?', mobile);
-  const intent = body.intent === 'tailor' ? 'tailor' : 'customer';
   if (!user) {
     if (!body.name) return { needsName: true };
     const name = str(body.name, 2, 60, 'Name');
