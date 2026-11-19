@@ -296,7 +296,14 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   const recent = get('SELECT COUNT(*) n FROM otp_log WHERE mobile=? AND ts>?', mobile, Date.now() - 10 * 60e3).n;
   if (recent >= 5) throw new HttpError(429, 'Too many OTP requests. Please try again in a few minutes.');
   const code = String(crypto.randomInt(100000, 1000000));
+  
   if (OTP_MODE === 'sms') {
+    await sendSms(mobile, code);
+    run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
+    run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
+    return { sent: true, testMode: false };
+  }
+
   run('INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts) VALUES(?,?,?,0)', mobile, hashOtp(mobile, code), Date.now() + 5 * 60e3);
   run('INSERT INTO otp_log(mobile,ts) VALUES(?,?)', mobile, Date.now());
 
@@ -311,6 +318,7 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
 
   return { sent: true, testMode: true, devOtp: code };
 });
+
 
     const email = body.email ? str(body.email, 3, 120, 'Email') : null;
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter a valid email');
