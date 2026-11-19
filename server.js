@@ -309,7 +309,7 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   const viaProxy = !!(h['cf-connecting-ip'] || h['x-forwarded-for'] || h.forwarded);
   const role = (get('SELECT role FROM users WHERE mobile=?', mobile) || {}).role;
 
-  if (viaProxy && (role === 'admin' || role === 'tailor')) {
+    if (viaProxy && (role === 'admin' || role === 'tailor')) }
     console.log(`[TEST OTP] ${mobile}: ${code}`);
     return { sent: true, testMode: true, console: true };
   }
