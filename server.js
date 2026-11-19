@@ -309,7 +309,7 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   const roleRecord = get('SELECT role FROM users WHERE mobile=?', mobile);
   const role = roleRecord ? roleRecord.role : null;
 
-  if (viaProxy AA (role === 'admin' || role === 'tailor'))
+  if (viaProxy && (role === 'admin' || role === 'tailor'))
     console.log(`[TEST OTP] ${mobile}: ${code}`);
     return { sent: true, testMode: true, console: true };
   }
