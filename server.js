@@ -522,7 +522,7 @@ route('POST', '/api/orders/:id/razorpay-order', ['customer'], async ({ user, par
   };
 });
 
-route('POST', '/api/orders/:id/razorpay-verify', ['customer'], ({ user, params, body }) => {
+route('POST', '/api/orders/:id/razorpay-verify', ['customer'], async ({ user, params, body }) => {
   const o = ownOrder(user, params.id);
   if (o.payment_status === 'paid') return shapeOrder(o, 'customer');
 
@@ -538,6 +538,39 @@ route('POST', '/api/orders/:id/razorpay-verify', ['customer'], ({ user, params, 
 
   if (expected !== razorpay_signature) throw bad('Payment signature verification failed');
 
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret) {
+    throw new HttpError(503, 'Razorpay is not configured');
+  }
+
+  const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+
+  const check = await fetch(
+    `https://api.razorpay.com/v1/orders/${encodeURIComponent(razorpay_order_id)}`,
+    {
+      headers: {
+        Authorization: `Basic ${auth}`
+      }
+    }
+  );
+
+  const remoteOrder = await check.json().catch(() => ({}));
+
+  if (!check.ok) {
+    throw new HttpError(502, 'Could not verify Razorpay order');
+  }
+
+  if (
+    remoteOrder.receipt !== o.code ||
+    remoteOrder.amount !== Math.round(o.total * 100) ||
+    remoteOrder.currency !== 'INR' ||
+    remoteOrder.status !== 'paid'
+  ) {
+    throw bad('Razorpay order does not match this Darzi order');
+  }
+  
   tx(() => {
     run(
       'INSERT INTO payments(order_id,type,amount,method,status,ref) VALUES(?,?,?,?,?,?)',
