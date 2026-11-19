@@ -316,6 +316,7 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   return { sent: true, testMode: true, devOtp: code };
 });
 route('POST', '/api/upload', ['customer', 'tailor', 'admin'], async ({ body }) => ({ url: await saveUpload(body.dataUrl) }));
+route('POST', '/api/auth/verify', null, ({ body, res }) => {
   const mobile = String(body.mobile || '').trim(), code = String(body.code || '').trim();
   if (!MOBILE.test(mobile) || !/^\d{6}$/.test(code)) throw bad('Enter the 6-digit OTP');
   const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
