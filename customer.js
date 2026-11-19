@@ -26,12 +26,12 @@ route('/', async () => {
   <section class="hero"><div><div class="eyebrow">${esc(D.cfg.brand)} · ${esc(D.cfg.hub.name.split(',').pop().trim())}</div><h1>${t('hero_h')}</h1><p class="lead">${t('hero_p')}</p>
     <form class="search" data-form="search" role="search"><input name="q" placeholder="${t('search_ph')}" aria-label="Search designs"><button class="btn">${t('search')}</button></form>
     <div class="row"><a class="btn" href="#/designs">${t('start')}</a><span class="small muted">${t('tagline')}</span></div></div>
-    <div class="art" aria-hidden="true">${garment('kurtas', '#2f5a45').replace('<svg', '<svg style="width:100%;height:100%;color:rgba(28,40,34,.6)"')}</div></section>
+    <div class="art"><img src="https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=900&q=85" alt="Bespoke Tailoring"></div>
   ${orders.length ? `<section class="block"><div class="row between"><h2>Your recent orders</h2><a href="#/orders">View all</a></div><div class="grid g2">${orders.slice(0, 3).map(orderCard).join('')}</div></section>` : ''}
   <section class="block"><h2>${t('categories')}</h2>
     <div class="grid g3"><a class="catcard" href="#/designs?g=men">${garment('shirts', '#c9d6df')}<b>${t('mens')}</b></a><a class="catcard" href="#/designs?g=women">${garment('blouses', '#c98f8a')}<b>${t('womens')}</b></a>
     ${cats.map(c => `<a class="catcard" href="#/designs?cat=${c.id}">${garment(c.slug, '#d9cdb4')}<b>${esc(c.name)}</b></a>`).join('')}</div>
-    ${popular.length ? `<p class="small muted" style="margin-top:12px">Popular right now: ${popular.map(c => `<a href="#/designs?cat=${c.id}">${esc(c.name)}</a>`).join(', ')}</p>` : ''}</section>
+    ${popular.length ? `<p class="small muteif (d.mode === 'self') $$('[data-mf]', f).forEach(i => d.meas[i.dataset.mf] = i.value);d" style="margin-top:12px">Popular right now: ${popular.map(c => `<a href="#/designs?cat=${c.id}">${esc(c.name)}</a>`).join(', ')}</p>` : ''}</section>
   <section class="block"><div class="row between"><h2>${t('featured')}</h2><a href="#/designs">See all designs</a></div><div class="grid g3" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">${feat.map(d => designCard(d, favs)).join('')}</div></section>
   <section class="block"><h2>${t('services')}</h2><div class="grid g2">
     <div class="card"><h3>Custom stitching</h3><p class="muted">Choose from our design gallery or upload a photo of what you want. Local tailors stitch it to your size.</p></div>
