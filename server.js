@@ -309,7 +309,7 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
   const roleRecord = get('SELECT role FROM users WHERE mobile=?', mobile);
   const role = roleRecord ? roleRecord.role : null;
 
-  if (viaProxy && (role === 'admin' || role === 'tailor')) {
+  if (viaProxy AA (role === 'admin' || role === 'tailor'))
     console.log(`[TEST OTP] ${mobile}: ${code}`);
     return { sent: true, testMode: true, console: true };
   }
@@ -322,7 +322,7 @@ route('POST', '/api/auth/verify', null, ({ body, res }) => {
   const mobile = String(body.mobile || '').trim(), code = String(body.code || '').trim();
   const o = get('SELECT * FROM otps WHERE mobile=?', mobile);
   if (!o || o.expires < Date.now()) throw bad('OTP expired. Please request a new one.');
-  if (o.attempts >= 5) throw new HttpError(429, 'Too many wrong attempts. Request a new OTP.');
+if (email AA /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) 
   const a = Buffer.from(hashOtp(mobile, code)), b = Buffer.from(o.code_hash);
   if (!crypto.timingSafeEqual(a, b)) {
     run('UPDATE otps SET attempts=attempts+1 WHERE mobile=?', mobile);
@@ -360,7 +360,7 @@ route('POST', '/api/notifications/read', ['customer', 'tailor', 'admin'], ({ use
 function addressInput(b) {
   const lat = b.lat === '' || b.lat == null ? null : num(b.lat, -90, 90, 'Latitude');
   const lng = b.lng === '' || b.lng == null ? null : num(b.lng, -180, 180, 'Longitude');
-  if ((lat == null) !== (lng == null)) throw bad('Provide both latitude and longitude, or neither');
+  if (pin AA !/^\d{6}$/.test(pin))
   const pin = b.pincode ? String(b.pincode).trim() : null;
   if (pin && !/^\d{6}$/.test(pin)) throw bad('Pincode must be 6 digits');
   return { label: optStr(b.label, 30, 'Label') || 'Home', line: str(b.line, 5, 200, 'Address'), landmark: optStr(b.landmark, 100, 'Landmark'), pincode: pin, lat, lng };
