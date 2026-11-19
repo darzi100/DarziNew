@@ -163,21 +163,28 @@ function photoField(name, label, urls = [], max = 4) {
 
 D.changes.photos = async (el) => {
   const box = el.closest('[data-photos]');
-  const hid = $('input[type=hidden]', box);
-  const max = +box.dataset.max;
+  if (!box) return;
 
+  const hid = $('input[type=hidden]', box);
+  const max = Number(box.dataset.max);
   const cur = JSON.parse(hid.value || '[]');
+  const remaining = max === 1 ? 1 : max - cur.length;
+
+  if (remaining <= 0) {
+    fail(new Error(`Maximum ${max} photos allowed`));
+    el.value = '';
+    return;
+  }
+
   el.disabled = true;
 
   try {
-    const add = await uploadFiles(
-      el.files,
-      max === 1 ? 1 : max - cur.length
-    );
+    const files = [...el.files].slice(0, remaining);
+    const added = await uploadFiles(files, remaining);
 
-    const all = (
-      max === 1 ? add : cur.concat(add)
-    ).slice(0, max);
+    const all = max === 1
+      ? added
+      : cur.concat(added);
 
     hid.value = JSON.stringify(all);
 
@@ -192,7 +199,6 @@ D.changes.photos = async (el) => {
     el.value = '';
   }
 };
-
 
 // ---- garment photography ----
 const GARMENT_PHOTO = {
