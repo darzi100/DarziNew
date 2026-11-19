@@ -44,7 +44,7 @@ const UPLOAD_RE = /^(?:\/uploads\/[a-f0-9]{32}\.(png|jpg|webp)|https:\/\/res\.cl
 const photoList = (arr, max) => {
   if (arr == null) return [];
   if (!Array.isArray(arr) || arr.length > max) throw bad(`At most ${max} photos allowed`);
-  for (const u of arr) if (typeof u !== 'string' || !UPLOAD_RE.test(u)) throw bad('Invalid photo');
+  for (const u of arr) if (typeof u !== 'string' || !UPLOAD_RE.test(u)) throw bad('Invalid image URL');
   return arr;
 };
 
