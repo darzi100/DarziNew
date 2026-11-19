@@ -214,3 +214,79 @@ footer.foot{border-top:1px solid var(--line);padding:32px 0 105px;color:var(--mu
 @media (prefers-reduced-motion:no-preference){
   .btn,.chip,.pick,.design,.catcard,.fav,.sw,.nav a{transition:all .18s cubic-bezier(.22,1,.36,1)}
 }
+
+/* === Atelier Motion & Page Transitions === */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(10px); filter: blur(3px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes modalPop {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes spinRing {
+  to { transform: rotate(360deg); }
+}
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+#app { transition: opacity .14s ease, transform .14s ease; }
+#app.view-out { opacity: 0; transform: translateY(6px); }
+#app.view-in  { animation: pageEnter .38s cubic-bezier(.22,1,.36,1) both; }
+
+.reveal-item {
+  opacity: 0;
+  animation: fadeSlideUp .48s cubic-bezier(.22,1,.36,1) forwards;
+  animation-delay: calc(var(--stagger, 0) * 45ms);
+}
+
+.modal-bg { animation: pageEnter .22s ease both; }
+.modal    { animation: modalPop .32s cubic-bezier(.22,1,.36,1) both; }
+.toast    { animation: fadeSlideUp .28s cubic-bezier(.22,1,.36,1) both; }
+
+.loader {
+  width: 34px; height: 34px; margin: 0 auto; border-radius: 50%;
+  border: 2.5px solid var(--line-strong); border-top-color: var(--green);
+  animation: spinRing .75s linear infinite;
+}
+
+.design .pic {
+  background: linear-gradient(110deg, var(--cream-2) 30%, #f7f2e7 50%, var(--cream-2) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+.design .pic img { opacity: 0; transition: opacity .4s ease, transform .55s cubic-bezier(.22,1,.36,1); }
+.design .pic img.loaded { opacity: 1; }
+
+.catcard { padding: 12px 12px 15px; overflow: hidden; }
+.catcard .garment-thumb {
+  width: 100%; aspect-ratio: 4/3; border-radius: 12px; overflow: hidden;
+  margin-bottom: 10px; background: var(--cream-2); position: relative;
+}
+.catcard .garment-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform .45s cubic-bezier(.22,1,.36,1);
+}
+.catcard:hover .garment-thumb img { transform: scale(1.07); }
+
+.hero .art { animation: floatSlow 6s ease-in-out infinite; }
+.hero .art .garment-thumb { width: 100%; height: 100%; }
+.hero .art img { width: 100%; height: 100%; object-fit: cover; }
+
+.btn { position: relative; overflow: hidden; }
+.btn::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.22) 50%, transparent 70%);
+  transform: translateX(-100%); transition: transform .55s ease;
+}
+.btn:hover::after { transform: translateX(100%); }
