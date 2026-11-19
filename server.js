@@ -5,7 +5,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { db, DATA_DIR } = require('./db');
-
 const PORT = Number(process.env.PORT) || 3000;
 const PROD = process.env.NODE_ENV === 'production';
 const OTP_MODE = process.env.OTP_MODE === 'sms' ? 'sms' : 'test';       // 'sms' needs a provider (not built in)
