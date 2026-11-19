@@ -321,6 +321,7 @@ route('POST', '/api/auth/request-otp', null, async ({ body, req }) => {
 });
 
 
+
     const email = body.email ? str(body.email, 3, 120, 'Email') : null;
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter a valid email');
     tx(() => {
