@@ -161,14 +161,14 @@ function seedDemo() {
 }
 seedDemo();
 
-// Real admin: if ADMIN_MOBILE is set and no admin exists yet, create one (works with SEED_DEMO=0).
+// Real admin: supports comma-separated numbers in ADMIN_MOBILE (e.g. "9876543210,9123456789").
 (function bootstrapAdmin() {
-  // The server owner sets ADMIN_MOBILE. That number is always an admin, even if it first signed up as a customer.
-  const m = process.env.ADMIN_MOBILE;
-  if (!m || !/^[6-9]\d{9}$/.test(m)) return;
-  const u = db.prepare('SELECT id, role FROM users WHERE mobile=?').get(m);
-  if (!u) db.prepare('INSERT INTO users(name,mobile,role) VALUES(?,?,?)').run('Admin', m, 'admin');
-  else if (u.role !== 'admin') db.prepare("UPDATE users SET role='admin' WHERE id=?").run(u.id);
+  const raw = process.env.ADMIN_MOBILE || '';
+  const mobiles = raw.split(',').map(s => s.trim()).filter(m => /^[6-9]\d{9}$/.test(m));
+  for (const m of mobiles) {
+    const u = db.prepare('SELECT id, role FROM users WHERE mobile=?').get(m);
+    if (!u) db.prepare('INSERT INTO users(name,mobile,role) VALUES(?,?,?)').run('Admin', m, 'admin');
+    else if (u.role !== 'admin') db.prepare("UPDATE users SET role='admin' WHERE id=?").run(u.id);
+  }
 })();
 
-module.exports = { db, DATA_DIR, DEFAULT_SETTINGS };
