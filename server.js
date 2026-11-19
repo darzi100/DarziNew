@@ -867,7 +867,7 @@ route('PUT', '/api/admin/categories/:id', A, ({ params, body }) => {
   const c = categoryInput(body); run('UPDATE categories SET name=?,sizes=?,fields=?,fabric_m=?,active=? WHERE id=?', c.name, J(c.sizes), J(c.fields), c.fabric_m, c.active, idp(params.id)); return { ok: true };
 });
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon' };
-const PUB = path.join(__dirname, 'public');
+const PUB = __dirname;
 const CSP = "default-src 'self'; img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.org https://unpkg.com https://*.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com; script-src 'self' https://unpkg.com https://checkout.razorpay.com; connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 function sendJSON(res, code, obj) {
   const b = JSON.stringify(obj); res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(b);
