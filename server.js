@@ -867,6 +867,40 @@ route('POST', '/api/admin/payouts', A, ({ body }) => {
   notify(tid, `Payout of Rs ${amount} recorded`); return { ok: true };
 });
 // content management
+// Admin content: designs
+route('GET', '/api/admin/designs', A, () =>
+  all(`SELECT d.*, c.name category
+       FROM designs d
+       JOIN categories c ON c.id = d.category_id
+       ORDER BY d.id DESC`)
+);
+
+// Admin content: fabrics
+route('GET', '/api/admin/fabrics', A, () =>
+  all('SELECT * FROM fabrics ORDER BY id DESC')
+    .map(f => ({ ...f, colors: P(f.colors, []) }))
+);
+// content management
+
+// Get all designs
+route('GET', '/api/admin/designs', A, () =>
+  all(`SELECT d.*, c.name AS category
+       FROM designs d
+       JOIN categories c ON c.id = d.category_id
+       ORDER BY d.id DESC`)
+);
+
+// Get all fabrics
+route('GET', '/api/admin/fabrics', A, () =>
+  all('SELECT * FROM fabrics ORDER BY id DESC')
+    .map(f => ({ ...f, colors: P(f.colors, []) }))
+);
+
+// Existing categories route
+route('GET', '/api/admin/categories', A, () =>
+  all('SELECT * FROM categories ORDER BY sort,id')
+    .map(c => ({ ...c, sizes: P(c.sizes, []), fields: P(c.fields, []) }))
+);
 route('GET', '/api/admin/categories', A, () => all('SELECT * FROM categories ORDER BY sort,id').map(c => ({ ...c, sizes: P(c.sizes, []), fields: P(c.fields, []) })));
 function categoryInput(b) {
   const list = (v, label) => { const a = (Array.isArray(v) ? v : String(v || '').split(',')).map(x => String(x).trim()).filter(Boolean); if (!a.length || a.length > 20) throw bad(`${label}: add 1-20 items`); return a; };
